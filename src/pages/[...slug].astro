@@ -3,8 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export async function getStaticPaths() {
-  const publicRoot = new URL('../../public/', import.meta.url);
-  const publicDir = path.resolve(publicRoot.pathname);
+  const publicDir = path.resolve(process.cwd(), 'public');
 
   const stack = [{ dir: publicDir, relBase: '' }];
   const slugs = [];
@@ -41,7 +40,7 @@ export const prerender = true;
 const slugParam = Astro.params.slug;
 const slug = typeof slugParam === 'string' ? slugParam : '';
 
-let htmlPath = new URL(`../../public/${slug}/index.html`, import.meta.url);
+const htmlPath = path.resolve(process.cwd(), 'public', slug, 'index.html');
 let html = '';
 
 if (slug && slug.includes('.')) {
@@ -49,7 +48,7 @@ if (slug && slug.includes('.')) {
 } else if (fs.existsSync(htmlPath)) {
   html = fs.readFileSync(htmlPath, 'utf8');
 } else {
-  const notFoundPath = new URL(`../../public/404.html`, import.meta.url);
+  const notFoundPath = path.resolve(process.cwd(), 'public', '404.html');
   if (fs.existsSync(notFoundPath)) {
     html = fs.readFileSync(notFoundPath, 'utf8');
   }

@@ -1,9 +1,8 @@
 ---
 import fs from 'node:fs';
+import path from 'node:path';
 
-const html = fs.readFileSync(
-  new URL('../../../public/blog/index.html', import.meta.url),
-  'utf8'
-);
+const htmlPath = path.resolve(process.cwd(), 'public', 'blog', 'index.html');
+const html = fs.readFileSync(htmlPath, 'utf8');
 ---
 <Fragment set:html={html} />
