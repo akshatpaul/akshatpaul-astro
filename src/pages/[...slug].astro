@@ -23,7 +23,13 @@ export async function getStaticPaths() {
 
       if (entry.isFile() && entry.name === 'index.html') {
         const slug = rel.replace(/\\/g, '/').replace(/\/index\.html$/, '');
-        if (slug && slug !== 'index' && slug !== '404_not_found') {
+        if (
+          slug &&
+          slug !== 'index' &&
+          slug !== 'index.html' &&
+          slug !== '404_not_found' &&
+          slug !== '404'
+        ) {
           slugs.push(slug);
         }
       }
