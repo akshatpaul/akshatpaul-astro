@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+  <title>W3Schools Home Page</title>
+  <link>https://akshatpaul.herokuapp.com</link>
+  <description>Free web building tutorials</description>
+		<item>
+		    <title>Programming made easy with Ruby Enumerables</title>
+		    <link>https://akshatpaul.herokuapp.com/blog/programming-made-easy-with-ruby-enumerables</link>
+		    <description>Programming made easy with Ruby Enumerables</description>
+	    </item>
+		<item>
+		    <title>How to start building Mobile apps in 10 mins? (With React Native)</title>
+		    <link>https://akshatpaul.herokuapp.com/blog/building-mobils-apps-in-10-mins</link>
+		    <description>How to start building Mobile apps in 10 mins? (With React Native)</description>
+	    </item>
+		<item>
+		    <title>Server side with React</title>
+		    <link>https://akshatpaul.herokuapp.com/blog/2015/server-side-with-react/</link>
+		    <description>Server side with React</description>
+	    </item>
+		<item>
+		    <title>WebView with React-Native </title>
+		    <link>https://akshatpaul.herokuapp.com/blog/2015/webview-with-react-native/</link>
+		    <description>WebView with React-Native </description>
+	    </item>
+</channel>
+</rss>

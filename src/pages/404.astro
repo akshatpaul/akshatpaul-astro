@@ -1,0 +1,9 @@
+---
+import fs from 'node:fs';
+
+const html = fs.readFileSync(
+  new URL('../../public/404.html', import.meta.url),
+  'utf8'
+);
+---
+<Fragment set:html={html} />

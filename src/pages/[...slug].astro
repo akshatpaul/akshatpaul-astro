@@ -1,0 +1,60 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+
+export async function getStaticPaths() {
+  const publicRoot = new URL('../../public/', import.meta.url);
+  const publicDir = path.resolve(publicRoot.pathname);
+
+  const stack = [{ dir: publicDir, relBase: '' }];
+  const slugs = [];
+
+  while (stack.length) {
+    const { dir, relBase } = stack.pop();
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      const rel = relBase ? path.join(relBase, entry.name) : entry.name;
+
+      if (entry.isDirectory()) {
+        stack.push({ dir: full, relBase: rel });
+        continue;
+      }
+
+      if (entry.isFile() && entry.name === 'index.html') {
+        const slug = rel.replace(/\\/g, '/').replace(/\/index\.html$/, '');
+        if (slug && slug !== 'index' && slug !== '404_not_found') {
+          slugs.push(slug);
+        }
+      }
+    }
+  }
+
+  return slugs.map((slug) => ({
+    params: { slug }
+  }));
+}
+
+export const prerender = true;
+
+const slugParam = Astro.params.slug;
+const slug = typeof slugParam === 'string' ? slugParam : '';
+
+let htmlPath = new URL(`../../public/${slug}/index.html`, import.meta.url);
+let html = '';
+
+if (slug && slug.includes('.')) {
+  html = '';
+} else if (fs.existsSync(htmlPath)) {
+  html = fs.readFileSync(htmlPath, 'utf8');
+} else {
+  const notFoundPath = new URL(`../../public/404.html`, import.meta.url);
+  if (fs.existsSync(notFoundPath)) {
+    html = fs.readFileSync(notFoundPath, 'utf8');
+  }
+  Astro.response.status = 404;
+}
+---
+
+<Fragment set:html={html} />

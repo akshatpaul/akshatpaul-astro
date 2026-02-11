@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>tutorial &#8211; AkshatPaul.com</title>
+	<atom:link href="/tag/tutorial/feed/" rel="self" type="application/rss+xml" />
+	<link>/</link>
+	<description></description>
+	<lastBuildDate>Thu, 27 Apr 2023 13:23:15 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.9.1</generator>
+
+<image>
+	<url>/wp-content/uploads/2022/12/favicon-32x32-1.png</url>
+	<title>tutorial &#8211; AkshatPaul.com</title>
+	<link>/</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>Building a React Native TV Application with React-Native-Tvos</title>
+		<link>/building-a-react-native-tv-application-with-react-native-tvos/</link>
+					<comments>/building-a-react-native-tv-application-with-react-native-tvos/#respond</comments>
+		
+		<dc:creator><![CDATA[Akshat Paul]]></dc:creator>
+		<pubDate>Tue, 05 Jul 2022 01:14:53 +0000</pubDate>
+				<category><![CDATA[Uncategorized]]></category>
+		<category><![CDATA[react native]]></category>
+		<category><![CDATA[tutorial]]></category>
+		<category><![CDATA[tvos]]></category>
+		<guid isPermaLink="false">/?p=740</guid>
+
+					<description><![CDATA[In today&#8217;s blog post, we&#8217;ll explore how to create a React Native TV application using the react-native-tvos library. React Native is a popular framework that allows developers to build cross-platform mobile applications using JavaScript and React. With the react-native-tvos package, you can leverage the same React Native codebase to build apps specifically tailored for tvOS, &#8230;<p class="read-more"> <a class="" href="/building-a-react-native-tv-application-with-react-native-tvos/"> <span class="screen-reader-text">Building a React Native TV Application with React-Native-Tvos</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<figure class="wp-block-image aligncenter size-full"><img fetchpriority="high" decoding="async" width="513" height="344" src="/wp-content/uploads/2023/04/Screenshot-2023-04-05-at-6.43.42-AM.png" alt="" class="wp-image-743" srcset="/wp-content/uploads/2023/04/Screenshot-2023-04-05-at-6.43.42-AM.png 513w, /wp-content/uploads/2023/04/Screenshot-2023-04-05-at-6.43.42-AM-300x201.png 300w" sizes="(max-width: 513px) 100vw, 513px" /></figure>
+
+
+
+<p class="has-text-align-left">In today&#8217;s blog post, we&#8217;ll explore how to create a React Native TV application using the react-native-tvos library. React Native is a popular framework that allows developers to build cross-platform mobile applications using JavaScript and React. With the react-native-tvos package, you can leverage the same React Native codebase to build apps specifically tailored for tvOS, the operating system that powers Apple TV devices.</p>
+
+
+
+<p>This tutorial assumes you have a basic understanding of React Native and its concepts. If you are new to React Native, consider reading through the official documentation before diving into this tutorial.</p>
+
+
+
+<ol class="wp-block-list">
+<li>Setting up the project</li>
+</ol>
+
+
+
+<p class="has-text-align-left">First, make sure you have the following tools installed on your machine:</p>
+
+
+
+<ul class="wp-block-list">
+<li>Node.js</li>
+
+
+
+<li>Watchman</li>
+
+
+
+<li>Xcode (for macOS users)</li>
+
+
+
+<li>React Native CLI</li>
+</ul>
+
+
+
+<p>Next, we will create our React Native TV app using the react-native-tvos CLI:</p>
+
+
+
+<pre class="wp-block-code"><code>npx react-native init MyApp --template=react-native-tvos</code></pre>
+
+
+
+<p>This command creates a new React Native project named &#8220;MyApp&#8221; and sets up the react-native-tvos template for tvOS development.</p>
+
+
+
+<ol class="wp-block-list" start="2">
+<li>Running the tvOS application</li>
+</ol>
+
+
+
+<p>To run the tvOS application on a simulator, navigate to the project folder and execute the following command:</p>
+
+
+
+<pre class="wp-block-code"><code>cd MyApp
+npx react-native run-ios --simulator="Apple TV"</code></pre>
+
+
+
+<ol class="wp-block-list" start="3">
+<li>Building a simple tvOS application</li>
+</ol>
+
+
+
+<p>In this example, we will create a simple tvOS app that displays a list of TV shows. First, replace the contents of <code>App.js</code> with the following code:</p>
+
+
+
+<pre class="wp-block-code"><code>import React, {useState} from 'react';
+import {SafeAreaView, StyleSheet, Text, View, FlatList, TouchableOpacity} from 'react-native';
+
+const TVShows = &#91;
+  {id: '1', title: 'Breaking Bad'},
+  {id: '2', title: 'Game of Thrones'},
+  {id: '3', title: 'Stranger Things'},
+  // ...add more shows as desired
+];
+
+const App = () =&gt; {
+  const &#91;selectedShow, setSelectedShow] = useState(null);
+
+  const renderItem = ({item}) =&gt; (
+    &lt;TouchableOpacity
+      style={styles.listItem}
+      onPress={() =&gt; setSelectedShow(item.title)}&gt;
+      &lt;Text style={styles.title}&gt;{item.title}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+
+  return (
+    &lt;SafeAreaView style={styles.container}&gt;
+      &lt;Text style={styles.header}&gt;React Native TV App with React-Native-Tvos&lt;/Text&gt;
+      &lt;FlatList
+        data={TVShows}
+        renderItem={renderItem}
+        keyExtractor={item =&gt; item.id}
+      /&gt;
+      {selectedShow &amp;&amp; (
+        &lt;View style={styles.selectedShow}&gt;
+          &lt;Text style={styles.selectedShowText}&gt;You selected: {selectedShow}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+    &lt;/SafeAreaView&gt;
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#222',
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFF',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  listItem: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 18,
+    color: '#FFF',
+  },
+  selectedShow: {
+    padding: 20,
+    borderTopColor: '#444',
+    borderTopWidth: 1,
+  },
+  selectedShowText: {
+    fontSize: 18,
+    color: '#FFF',
+  },
+});
+
+export default App;</code></pre>
+
+
+
+<p>In the code above, we created a functional component that uses a FlatList to display TV show titles from the <code>TVShows</code> array. Each title is wrapped in a TouchableOpacity component, which allows users to select the show by clicking on it. Once a show is selected, its title is displayed below the FlatList.</p>
+
+
+
+<ol class="wp-block-list" start="4">
+<li>Styling the tvOS application</li>
+</ol>
+
+
+
+<p>You can customize the appearance of your tvOS app using React Native&#8217;s StyleSheet, which is similar to CSS but with a few differences tailored to the platform. In the provided code, we&#8217;ve created a simple dark theme using the <code>styles</code> object.</p>
+
+
+
+<ol class="wp-block-list" start="5">
+<li>Running the application</li>
+</ol>
+
+
+
+<p>Now that we&#8217;ve built our simple tvOS app, run the application in the simulator using the following command:</p>
+
+
+
+<pre class="wp-block-code"><code>npx react-native run-ios --simulator="Apple TV"</code></pre>
+
+
+
+<p>In this tutorial, we&#8217;ve learned how to create a React Native TV application using the react-native-tvos library. By following these steps, you can build cross-platform apps that work seamlessly on Apple TV devices, all while leveraging your existing React Native knowledge.</p>
+
+
+
+<p>As you explore more about tvOS development with React Native, you may want to look into more advanced features like integrating with TV services, handling remote control events, and optimizing the user experience for larger screens. The React Native documentation and the react-native-tvos GitHub repository are excellent resources for diving deeper into these topics.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/building-a-react-native-tv-application-with-react-native-tvos/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+	</channel>
+</rss>
