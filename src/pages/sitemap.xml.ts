@@ -23,7 +23,7 @@ export async function GET() {
 
   const excluded = new Set([
     '404', '404_not_found', 'wp-admin', 'wp-includes', 'wp-content',
-    'wp-json', 'feed', 'comments', 'author', 'tag', 'category',
+    'wp-json', 'feed', 'comments', 'author', 'tag', 'category', '_archive',
   ]);
 
   while (stack.length) {
@@ -35,8 +35,8 @@ export async function GET() {
       if (entry.name.startsWith('.')) continue;
 
       const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
-      const topLevel = rel.split('/')[0];
-      if (excluded.has(topLevel)) continue;
+      const segments = rel.split('/');
+      if (segments.some(s => excluded.has(s))) continue;
 
       const full = path.join(dir, entry.name);
       const htmlPath = path.join(full, 'index.html');
