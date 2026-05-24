@@ -1,8 +1,149 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteNav from '../../components/SiteNav.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 
-const htmlPath = path.resolve(process.cwd(), 'public', 'blog', 'index.html');
-const html = fs.readFileSync(htmlPath, 'utf8');
+const posts = [
+  {
+    slug: 'react-native-new-architecture-2026',
+    title: 'React Native New Architecture 2026: JSI, Fabric, TurboModules & How to Migrate',
+    date: '2026-05-07',
+    excerpt: 'As of React Native 0.83, the legacy bridge architecture has been completely removed. JSI, Fabric, TurboModules — here\'s what changed and how to migrate your app.',
+    tag: 'React Native',
+  },
+  {
+    slug: 'building-a-react-native-tv-application-with-react-native-tvos',
+    title: 'Building a React Native TV Application with React-Native-Tvos',
+    date: '2023-04-05',
+    excerpt: 'A step-by-step guide to building a fully functional TV application using React Native and the react-native-tvos fork.',
+    tag: 'React Native',
+  },
+  {
+    slug: 'introduction-to-aws-amplify',
+    title: 'Introduction to AWS Amplify',
+    date: '2022-12-23',
+    excerpt: 'AWS Amplify is a development platform for building secure, scalable mobile and web applications — a fully managed service that provides tools for front-end and back-end development.',
+    tag: 'AWS',
+  },
+  {
+    slug: 'programming-made-easy-with-ruby-enumerables',
+    title: 'Programming made easy with Ruby Enumerables',
+    date: '2020-06-14',
+    excerpt: 'Enumerable is a mixin consisting of collection classes with various traversal and search methods. Learn how to write cleaner Ruby with Enumerables.',
+    tag: 'Ruby',
+  },
+  {
+    slug: 'how-to-start-building-mobile-apps-in-10-mins-with-react-native',
+    title: 'How to start building Mobile apps in 10 mins? (With React Native)',
+    date: '2019-11-12',
+    excerpt: 'There are two ways to set up any React Native project: Expo CLI or React Native CLI. This guide walks you through both and gets you running in minutes.',
+    tag: 'React Native',
+  },
+];
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
 ---
-<Fragment set:html={html} />
+
+<BaseLayout title="Blog — Akshat Paul" description="Articles on React Native, mobile development, AWS, and software engineering by Akshat Paul.">
+  <SiteNav />
+
+  <main class="blog-main">
+    <header class="blog-header">
+      <h1>Blog</h1>
+      <p>Writing on software engineering, one concept at a time.</p>
+    </header>
+
+    <div class="post-grid">
+      {posts.map(post => (
+        <article class="post-card">
+          <span class="post-tag">{post.tag}</span>
+          <h2><a href={`/${post.slug}/`}>{post.title}</a></h2>
+          <time class="post-date" datetime={post.date}>{formatDate(post.date)}</time>
+          <p class="post-excerpt">{post.excerpt}</p>
+          <a class="read-more" href={`/${post.slug}/`}>Read article →</a>
+        </article>
+      ))}
+    </div>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+.blog-main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+.blog-header {
+  margin-bottom: 3rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 2rem;
+}
+.blog-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+.blog-header p {
+  font-size: 1.1rem;
+  color: var(--color-muted);
+  margin: 0;
+}
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+@media (max-width: 680px) {
+  .post-grid { grid-template-columns: 1fr; }
+}
+.post-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.post-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 16px rgba(1,112,185,0.08);
+}
+.post-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-primary);
+  background: rgba(1,112,185,0.08);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  align-self: flex-start;
+}
+.post-card h2 {
+  font-size: 1.15rem;
+  line-height: 1.4;
+}
+.post-card h2 a { color: var(--color-text); }
+.post-card h2 a:hover { color: var(--color-primary); }
+.post-date {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+.post-excerpt {
+  font-size: 0.95rem;
+  color: var(--color-muted);
+  line-height: 1.6;
+  flex: 1;
+}
+.read-more {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-top: 0.25rem;
+}
+.read-more:hover { color: var(--color-primary-dark); }
+</style>

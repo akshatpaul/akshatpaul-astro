@@ -1,0 +1,39 @@
+---
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>&copy; {year} Akshat Paul &mdash; <a href="https://twitter.com/paulakshat" target="_blank" rel="noopener">@paulakshat</a></p>
+    <nav class="footer-nav">
+      <a href="/">Home</a>
+      <a href="/blog/">Blog</a>
+      <a href="https://github.com/akshatpaul" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://twitter.com/paulakshat" target="_blank" rel="noopener">Twitter</a>
+      <a href="https://linkedin.com/in/akshatpaul" target="_blank" rel="noopener">LinkedIn</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+.site-footer {
+  background: #0d0d0d;
+  color: #888;
+  margin-top: 4rem;
+  border-top: 1px solid #222;
+}
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.footer-inner p { font-size: 0.875rem; margin: 0; }
+.footer-inner a { color: #aaa; }
+.footer-inner a:hover { color: #fff; }
+.footer-nav { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+.footer-nav a { font-size: 0.875rem; }
+</style>

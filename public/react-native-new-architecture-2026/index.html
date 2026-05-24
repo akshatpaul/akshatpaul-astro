@@ -275,6 +275,16 @@ gtag("config", "GT-TQSRXD2");
 .eael-adv-search-loader { display: none !important; }
 .eael-adv-search-close { display: none !important; }
 </style>
+<style>.eael-advanced-search-widget{display:none!important;}</style>
+<style>
+.simple-post-nav{display:flex;justify-content:space-between;align-items:stretch;padding:2rem 0;border-top:1px solid #e2e8f0;margin-top:2rem;gap:1rem;}
+.simple-post-nav a{display:flex;flex-direction:column;max-width:48%;text-decoration:none;color:#1a202c;border:1px solid #e2e8f0;border-radius:8px;padding:1rem 1.25rem;transition:border-color .2s;}
+.simple-post-nav a:hover{border-color:#3b82f6;}
+.simple-post-nav .nav-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:.25rem;}
+.simple-post-nav .nav-title{font-size:0.95rem;font-weight:600;line-height:1.4;}
+.simple-post-nav .nav-prev{margin-right:auto;}
+.simple-post-nav .nav-next{margin-left:auto;text-align:right;}
+</style>
 </head>
 
 <body itemtype="https://schema.org/Blog" itemscope="itemscope" class="wp-singular post-template post-template-elementor_theme single single-post postid-740 single-format-standard wp-theme-astra ast-desktop ast-page-builder-template ast-no-sidebar astra-4.0.2 ast-blog-single-style-1 ast-single-post ast-inherit-site-logo-transparent ast-hfb-header elementor-page-516 ast-normal-title-enabled elementor-default elementor-kit-7">
@@ -438,18 +448,7 @@ gtag("config", "GT-TQSRXD2");
 						<div class="elementor-container elementor-column-gap-default">
 					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-bbcd98e" data-id="bbcd98e" data-element_type="column">
 			<div class="elementor-widget-wrap elementor-element-populated">
-						<div class="elementor-element elementor-element-c9e5a53 elementor-post-navigation-borders-yes elementor-widget elementor-widget-post-navigation" data-id="c9e5a53" data-element_type="widget" data-widget_type="post-navigation.default">
-				<div class="elementor-widget-container">
-			<link rel="stylesheet" href="/wp-content/plugins/elementor-pro/assets/css/widget-theme-elements.min.css">		<div class="elementor-post-navigation">
-			<div class="elementor-post-navigation__prev elementor-post-navigation__link">
-				<a href="/programming-made-easy-with-ruby-enumerables/" rel="prev"><span class="post-navigation__arrow-wrapper post-navigation__arrow-prev"><i class="fa fa-angle-left" aria-hidden="true"></i><span class="elementor-screen-only">Prev</span></span><span class="elementor-post-navigation__link__prev"><span class="post-navigation__prev--label">Previous</span><span class="post-navigation__prev--title">Programming made easy with Ruby Enumerables</span></span></a>			</div>
-							<div class="elementor-post-navigation__separator-wrapper">
-					<div class="elementor-post-navigation__separator"></div>
-				</div>
-						<div class="elementor-post-navigation__next elementor-post-navigation__link">
-				<a href="/introduction-to-aws-amplify/" rel="next"><span class="elementor-post-navigation__link__next"><span class="post-navigation__next--label">Next</span><span class="post-navigation__next--title">Introduction to AWS Amplify</span></span><span class="post-navigation__arrow-wrapper post-navigation__arrow-next"><i class="fa fa-angle-right" aria-hidden="true"></i><span class="elementor-screen-only">Next</span></span></a>			</div>
-		</div>
-				</div>
+						
 				</div>
 				<section data-particle_enable="false" data-particle-mobile-disabled="false" class="elementor-section elementor-inner-section elementor-element elementor-element-3b7e09d elementor-section-full_width elementor-section-height-default elementor-section-height-default" data-id="3b7e09d" data-element_type="section">
 						<div class="elementor-container elementor-column-gap-default">
@@ -1081,18 +1080,7 @@ end
 		</div>
 					</div>
 		</section>
-				<div class="elementor-element elementor-element-a208eac elementor-post-navigation-borders-yes elementor-widget elementor-widget-post-navigation" data-id="a208eac" data-element_type="widget" data-widget_type="post-navigation.default">
-				<div class="elementor-widget-container">
-					<div class="elementor-post-navigation">
-			<div class="elementor-post-navigation__prev elementor-post-navigation__link">
-				<a href="/programming-made-easy-with-ruby-enumerables/" rel="prev"><span class="post-navigation__arrow-wrapper post-navigation__arrow-prev"><i class="fa fa-angle-left" aria-hidden="true"></i><span class="elementor-screen-only">Prev</span></span><span class="elementor-post-navigation__link__prev"><span class="post-navigation__prev--label">Previous</span><span class="post-navigation__prev--title">Programming made easy with Ruby Enumerables</span></span></a>			</div>
-							<div class="elementor-post-navigation__separator-wrapper">
-					<div class="elementor-post-navigation__separator"></div>
-				</div>
-						<div class="elementor-post-navigation__next elementor-post-navigation__link">
-				<a href="/introduction-to-aws-amplify/" rel="next"><span class="elementor-post-navigation__link__next"><span class="post-navigation__next--label">Next</span><span class="post-navigation__next--title">Introduction to AWS Amplify</span></span><span class="post-navigation__arrow-wrapper post-navigation__arrow-next"><i class="fa fa-angle-right" aria-hidden="true"></i><span class="elementor-screen-only">Next</span></span></a>			</div>
-		</div>
-				</div>
+				
 				</div>
 				<div class="elementor-element elementor-element-1122bef elementor-widget__width-auto elementor-widget elementor-widget-heading" data-id="1122bef" data-element_type="widget" data-widget_type="heading.default">
 				<div class="elementor-widget-container">
@@ -1133,7 +1121,8 @@ end
 					</div>
 		</section>
 				</div>
-					</main><!-- #main -->
+					<div class="simple-post-nav"><a href="/introduction-to-aws-amplify/" class="nav-prev"><span class="nav-label">← Previous</span><span class="nav-title">Introduction to AWS Amplify</span></a><span></span></div>
+</main><!-- #main -->
 			
 		
 	</div><!-- #primary -->

@@ -1,0 +1,36 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {description && <meta name="description" content={description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500&family=Rubik:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/wp-content/uploads/2022/04/cropped-website_icon-1-32x32.png" sizes="32x32" />
+  <style>
+    /* inline global CSS to avoid a render-blocking request */
+    :root{--color-primary:#0170B9;--color-primary-dark:#015a9a;--color-text:#3a3a3a;--color-muted:#4B4F58;--color-bg:#ffffff;--color-surface:#F5F5F5;--color-border:#E5E5E5;--font-body:'Karla',sans-serif;--font-heading:'Rubik',sans-serif;--radius:8px;--max-width:1100px;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{font-size:16px;scroll-behavior:smooth;}
+    body{font-family:var(--font-body);color:var(--color-text);background:var(--color-bg);line-height:1.7;-webkit-font-smoothing:antialiased;}
+    h1,h2,h3,h4,h5,h6{font-family:var(--font-heading);font-weight:600;line-height:1.3;color:var(--color-text);}
+    a{color:var(--color-primary);text-decoration:none;}
+    a:hover{color:var(--color-primary-dark);}
+    img{max-width:100%;height:auto;display:block;}
+    p{margin-bottom:1rem;}
+    p:last-child{margin-bottom:0;}
+  </style>
+</head>
+<body>
+  <slot />
+</body>
+</html>
