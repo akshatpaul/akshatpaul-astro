@@ -82,7 +82,7 @@ if (isBlogPost && fs.existsSync(htmlPath)) {
 
   const titleMatch = raw.match(/<title>([^<]+)<\/title>/);
   postTitle = titleMatch
-    ? decodeEntities(titleMatch[1]).replace(/\s*[–\-|]\s*AkshatPaul\.com.*/i, '').trim()
+    ? decodeEntities(titleMatch[1]).replace(/\s*[—–\-|]\s*AkshatPaul\.com.*/i, '').trim()
     : slug;
 
   const dateMatch = raw.match(/article:published_time["'][^>]+content=["']([^"'T]+)/);
