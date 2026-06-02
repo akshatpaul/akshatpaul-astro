@@ -84,11 +84,12 @@ This regenerates the sitemap and compiles all pages.
 
 Ordered newest → oldest. This order drives the prev/next navigation on post pages.
 
-1. `react-native-new-architecture-2026` — React Native New Architecture 2026
-2. `building-a-react-native-tv-application-with-react-native-tvos` — Building a React Native TV Application
-3. `introduction-to-aws-amplify` — Introduction to AWS Amplify
-4. `programming-made-easy-with-ruby-enumerables` — Programming made easy with Ruby Enumerables
-5. `how-to-start-building-mobile-apps-in-10-mins-with-react-native` — How to start building Mobile apps in 10 mins?
+1. `hermes-v1-vs-v8-react-native` — Hermes V1 vs V8: The JavaScript Engine Deep Dive for React Native 0.84
+2. `react-native-new-architecture-2026` — React Native New Architecture 2026
+3. `building-a-react-native-tv-application-with-react-native-tvos` — Building a React Native TV Application
+4. `introduction-to-aws-amplify` — Introduction to AWS Amplify
+5. `programming-made-easy-with-ruby-enumerables` — Programming made easy with Ruby Enumerables
+6. `how-to-start-building-mobile-apps-in-10-mins-with-react-native` — How to start building Mobile apps in 10 mins?
 
 ---
 

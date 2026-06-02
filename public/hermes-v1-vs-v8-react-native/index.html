@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>Hermes V1 vs V8: The JavaScript Engine Deep Dive for React Native 0.84 — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-06-02">
+  <meta property="og:description" content="With React Native 0.84 shipping Hermes V1 as the default engine, here's the architecture deep dive that explains why Hermes beats V8 for mobile — AOT compilation, Hades GC, and real performance numbers.">
+</head>
+<body>
+
+<!-- VIDEO EMBED -->
+<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin-bottom:2rem;">
+  <iframe
+    style="position:absolute;top:0;left:0;width:100%;height:100%;"
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/VVpaAlSGD-Q?si=1-Zjz1eZ0glQbCd1"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen>
+  </iframe>
+</div>
+
+<p><em>Prefer video over text? Watch the full breakdown above — everything covered in this post is explained visually in the video. If you'd rather read, keep going.</em></p>
+
+<p>Every React Native app you've ever built runs on a JavaScript engine. You write JS, something executes it, and your app comes to life. For years, that "something" was V8 — the same engine powering Chrome and Node.js. Then Meta built Hermes. And with React Native 0.84 shipping Hermes V1 as the default engine in February 2026, it's time to understand what's actually happening under the hood — and why it matters for your app's performance.</p>
+
+<p>This isn't an academic comparison. This is the architecture deep dive that explains why your cold start times dropped, why your FlatList scrolls smoother, and why the engine choice is one of the most consequential decisions in your React Native stack.</p>
+
+<h2 id="what-is-a-js-engine">What Is a JavaScript Engine, Really?</h2>
+
+<p>A JavaScript engine is the runtime that takes your JavaScript source code and executes it on a device. It handles parsing, compilation, memory allocation, and garbage collection. In a browser or Node.js environment, V8 does all of this. In React Native, you have a choice — and since RN 0.76, that choice has defaulted to Hermes.</p>
+
+<p>The reason engine choice matters so much in mobile development is the constraint environment. Mobile devices — especially mid-range Android phones which represent the majority of your real user base — have limited RAM, slower CPUs, and no JIT warmup time to spare. The engine that wins on mobile isn't the fastest in absolute terms. It's the one that starts fastest, uses the least memory, and keeps garbage collection pauses short enough that users never feel a jank.</p>
+
+<!-- DIAGRAM 1: V8 vs Hermes Overview -->
+<svg viewBox="0 0 720 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;margin:2rem auto;">
+  <!-- V8 side -->
+  <rect x="10" y="10" width="330" height="140" rx="10" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="175" y="35" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#1E40AF">V8 (Chrome / Node.js)</text>
+  <text x="175" y="58" text-anchor="middle" font-family="monospace" font-size="11" fill="#3B82F6">General-purpose · JIT · Desktop &amp; Server</text>
+  <line x1="30" y1="68" x2="320" y2="68" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="175" y="88" text-anchor="middle" font-family="monospace" font-size="11" fill="#1E3A5F">Compiles at RUNTIME</text>
+  <text x="175" y="107" text-anchor="middle" font-family="monospace" font-size="11" fill="#1E3A5F">JIT warms up over time</text>
+  <text x="175" y="126" text-anchor="middle" font-family="monospace" font-size="11" fill="#1E3A5F">Peak throughput after warmup</text>
+  <text x="175" y="145" text-anchor="middle" font-family="monospace" font-size="10" fill="#6B7280">Best for: long-running processes</text>
+
+  <!-- Hermes side -->
+  <rect x="380" y="10" width="330" height="140" rx="10" fill="#F0FDF4" stroke="#10B981" stroke-width="1.5"/>
+  <text x="545" y="35" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#065F46">Hermes V1 (React Native)</text>
+  <text x="545" y="58" text-anchor="middle" font-family="monospace" font-size="11" fill="#10B981">Mobile-first · AOT · iOS &amp; Android</text>
+  <line x1="400" y1="68" x2="690" y2="68" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="545" y="88" text-anchor="middle" font-family="monospace" font-size="11" fill="#1E3A5F">Compiles at BUILD TIME</text>
+  <text x="545" y="107" text-anchor="middle" font-family="monospace" font-size="11" fill="#1E3A5F">Instant startup, no warmup needed</text>
+  <text x="545" y="126" text-anchor="middle" font-family="monospace" font-size="11" fill="#1E3A5F">Lower memory, faster cold start</text>
+  <text x="545" y="145" text-anchor="middle" font-family="monospace" font-size="10" fill="#6B7280">Best for: mobile apps</text>
+</svg>
+
+<h2 id="v8-architecture">How V8 Works: Ignition, TurboFan, and JIT Compilation</h2>
+
+<p>V8 is a masterpiece of JIT (Just-In-Time) compilation engineering. When V8 receives your JavaScript, it goes through a multi-stage pipeline designed to balance startup speed with long-term execution performance.</p>
+
+<p>First, V8's parser reads your source code and produces an Abstract Syntax Tree (AST). Then <strong>Ignition</strong> — V8's bytecode interpreter — compiles that AST into bytecode and starts executing it immediately. This is fast to start, but bytecode execution isn't as fast as native machine code.</p>
+
+<p>Here's where V8 gets clever. While Ignition executes your code, it profiles it — tracking which functions are called frequently, what types of values they receive, and which branches are taken. This profiling data feeds into <strong>TurboFan</strong>, V8's optimising compiler. TurboFan takes "hot" functions — the ones called most often — and recompiles them into highly optimised native machine code.</p>
+
+<!-- DIAGRAM 2: V8 Pipeline -->
+<svg viewBox="0 0 720 110" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;margin:2rem auto;">
+  <text x="360" y="18" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#1E3A5F">V8 Compilation Pipeline (Runtime)</text>
+
+  <!-- Boxes -->
+  <rect x="10" y="30" width="120" height="44" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="70" y="50" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#1E40AF">JS Source</text>
+  <text x="70" y="66" text-anchor="middle" font-family="monospace" font-size="9" fill="#3B82F6">Your code</text>
+
+  <rect x="170" y="30" width="120" height="44" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="230" y="50" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#1E40AF">Parser → AST</text>
+  <text x="230" y="66" text-anchor="middle" font-family="monospace" font-size="9" fill="#3B82F6">Syntax tree</text>
+
+  <rect x="330" y="30" width="120" height="44" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="390" y="50" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#1E40AF">Ignition</text>
+  <text x="390" y="66" text-anchor="middle" font-family="monospace" font-size="9" fill="#3B82F6">Bytecode + execute</text>
+
+  <rect x="490" y="30" width="120" height="44" rx="6" fill="#EDE9FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="550" y="50" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#5B21B6">TurboFan</text>
+  <text x="550" y="66" text-anchor="middle" font-family="monospace" font-size="9" fill="#7C3AED">JIT optimised code</text>
+
+  <rect x="630" y="30" width="80" height="44" rx="6" fill="#DCFCE7" stroke="#10B981" stroke-width="1.5"/>
+  <text x="670" y="50" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#065F46">Native</text>
+  <text x="670" y="66" text-anchor="middle" font-family="monospace" font-size="9" fill="#10B981">Machine code</text>
+
+  <!-- Arrows -->
+  <line x1="130" y1="52" x2="168" y2="52" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="290" y1="52" x2="328" y2="52" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="450" y1="52" x2="488" y2="52" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="610" y1="52" x2="628" y2="52" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Profiling feedback loop -->
+  <path d="M550 74 Q550 98 390 98 Q280 98 280 74" fill="none" stroke="#7C3AED" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr2)"/>
+  <text x="415" y="108" text-anchor="middle" font-family="monospace" font-size="9" fill="#7C3AED">profiling feedback loop</text>
+
+  <defs>
+    <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#94A3B8"/>
+    </marker>
+    <marker id="arr2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#7C3AED"/>
+    </marker>
+  </defs>
+</svg>
+
+<p>This is brilliant for long-running server processes and browser applications where the JIT compiler has time to warm up. A Node.js server running for hours will continuously optimise hot paths. But a mobile app has a different problem. Users tap your app icon and expect it to be interactive in under a second. There is no warmup time. The JIT compiler is a liability at startup, not an asset.</p>
+
+<h2 id="hermes-architecture">How Hermes Works: AOT Bytecode and the Mobile-First Philosophy</h2>
+
+<p>Meta built Hermes with a single design principle: <strong>optimise for mobile app startup, not long-running execution</strong>. The architectural decision that flows from this is radical — don't compile JavaScript at runtime at all. Compile it at build time.</p>
+
+<p>This is Ahead-Of-Time (AOT) compilation. When you build your React Native app with Hermes enabled, the Metro bundler compiles your entire JavaScript bundle into Hermes bytecode before the app is packaged. By the time a user downloads your app, there is no JavaScript source code in it. There is only pre-compiled bytecode.</p>
+
+<!-- DIAGRAM 3: Hermes AOT Pipeline -->
+<svg viewBox="0 0 720 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;margin:2rem auto;">
+  <defs>
+    <marker id="arrG" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#10B981"/>
+    </marker>
+  </defs>
+
+  <!-- Build time row -->
+  <rect x="10" y="10" width="700" height="62" rx="8" fill="#F0FDF4" stroke="#A7F3D0" stroke-width="1.5"/>
+  <text x="22" y="28" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">BUILD TIME</text>
+
+  <rect x="30" y="34" width="100" height="28" rx="5" fill="#DCFCE7" stroke="#10B981" stroke-width="1.2"/>
+  <text x="80" y="52" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">JS Source</text>
+
+  <line x1="130" y1="48" x2="158" y2="48" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <rect x="160" y="34" width="130" height="28" rx="5" fill="#DCFCE7" stroke="#10B981" stroke-width="1.2"/>
+  <text x="225" y="52" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">Metro Bundler</text>
+
+  <line x1="290" y1="48" x2="318" y2="48" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <rect x="320" y="34" width="140" height="28" rx="5" fill="#DCFCE7" stroke="#10B981" stroke-width="1.2"/>
+  <text x="390" y="52" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">Hermes Compiler</text>
+
+  <line x1="460" y1="48" x2="488" y2="48" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <rect x="490" y="34" width="130" height="28" rx="5" fill="#DCFCE7" stroke="#10B981" stroke-width="1.2"/>
+  <text x="555" y="47" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">Bytecode .hbc</text>
+  <text x="555" y="59" text-anchor="middle" font-family="monospace" font-size="9" fill="#059669">Packed into APK/IPA</text>
+
+  <!-- Runtime row -->
+  <rect x="10" y="90" width="700" height="62" rx="8" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1.5"/>
+  <text x="22" y="108" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">RUNTIME (on device)</text>
+
+  <rect x="30" y="112" width="130" height="28" rx="5" fill="#A7F3D0" stroke="#10B981" stroke-width="1.2"/>
+  <text x="95" y="126" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">Load Bytecode</text>
+  <text x="95" y="137" text-anchor="middle" font-family="monospace" font-size="9" fill="#059669">No parsing needed</text>
+
+  <line x1="160" y1="126" x2="188" y2="126" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <rect x="190" y="112" width="130" height="28" rx="5" fill="#A7F3D0" stroke="#10B981" stroke-width="1.2"/>
+  <text x="255" y="126" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">Hermes VM</text>
+  <text x="255" y="137" text-anchor="middle" font-family="monospace" font-size="9" fill="#059669">Direct execution</text>
+
+  <line x1="320" y1="126" x2="348" y2="126" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <rect x="350" y="112" width="130" height="28" rx="5" fill="#A7F3D0" stroke="#10B981" stroke-width="1.2"/>
+  <text x="415" y="126" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">Hades GC</text>
+  <text x="415" y="137" text-anchor="middle" font-family="monospace" font-size="9" fill="#059669">Background thread</text>
+
+  <line x1="480" y1="126" x2="508" y2="126" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <rect x="510" y="112" width="130" height="28" rx="5" fill="#6EE7B7" stroke="#059669" stroke-width="1.5"/>
+  <text x="575" y="126" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#065F46">App Running ✓</text>
+  <text x="575" y="137" text-anchor="middle" font-family="monospace" font-size="9" fill="#065F46">Fast. Smooth. Done.</text>
+</svg>
+
+<p>When your app launches, Hermes doesn't need to parse JavaScript. It doesn't need to build an AST. It doesn't need to run an interpreter while a JIT compiler warms up in the background. It loads bytecode and executes it directly. That's why cold start times drop so dramatically with Hermes.</p>
+
+<h2 id="hermes-v1">What Changed in Hermes V1 (React Native 0.84)</h2>
+
+<p>Hermes has been available since React Native 0.60, but Hermes V1 — shipped as the default engine in RN 0.84 — is a fundamentally different piece of software from what came before. The original Hermes was a solid AOT bytecode engine with intentionally limited scope. Hermes V1 is a complete rewrite with genuine ambitions to close the gap with V8 on sustained execution performance, while keeping every startup advantage of the original.</p>
+
+<ul>
+  <li><strong>Rewritten compiler pipeline</strong> — Better optimisation passes, smarter dead code elimination, and improved handling of modern JS patterns including optional chaining, nullish coalescing, and async/await.</li>
+  <li><strong>Improved JIT tier</strong> — A lightweight JIT compiler for hot functions at runtime, giving it some of V8's long-running execution advantages without sacrificing startup performance.</li>
+  <li><strong>Hades Garbage Collector</strong> — A concurrent, generational GC that runs most of its work on a background thread, dramatically reducing pause times during list scrolling and animations.</li>
+  <li><strong>New bytecode format</strong> — Better cache locality and faster decoding, contributing to further cold start improvements.</li>
+  <li><strong>Full ES2022+ support</strong> — Earlier Hermes versions had gaps in modern JavaScript support. Hermes V1 is fully compliant and handles the patterns modern React code relies on.</li>
+</ul>
+
+<h2 id="aot-vs-jit">AOT vs JIT: The Fundamental Trade-off</h2>
+
+<p><strong>JIT compilation</strong> (V8's approach) defers optimisation to runtime, when real profiling data is available. A JIT compiler knows which functions are hot and makes aggressive type-specialised optimisations. The downside: parsing, compilation, and profiling all consume CPU and memory during the period your user is staring at a loading screen.</p>
+
+<p><strong>AOT compilation</strong> (Hermes's approach) moves all compilation work to build time. The runtime simply executes pre-compiled bytecode — fast, predictable, no surprises. The trade-off is lower peak throughput for sustained long-running workloads compared to a fully warmed-up JIT.</p>
+
+<!-- DIAGRAM 4: AOT vs JIT Comparison -->
+<svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;margin:2rem auto;">
+  <defs>
+    <marker id="arrB" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arrG2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#10B981"/>
+    </marker>
+  </defs>
+
+  <text x="360" y="18" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#1E3A5F">AOT vs JIT: When Does Compilation Happen?</text>
+
+  <!-- JIT row -->
+  <text x="10" y="48" font-family="monospace" font-size="10" font-weight="bold" fill="#3B82F6">JIT (V8)</text>
+  <rect x="70" y="34" width="80" height="24" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="110" y="50" text-anchor="middle" font-family="monospace" font-size="9" fill="#1E40AF">Write JS</text>
+  <line x1="150" y1="46" x2="168" y2="46" stroke="#3B82F6" stroke-width="1.2" marker-end="url(#arrB)"/>
+  <rect x="170" y="34" width="80" height="24" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="210" y="50" text-anchor="middle" font-family="monospace" font-size="9" fill="#1E40AF">Bundle</text>
+  <line x1="250" y1="46" x2="268" y2="46" stroke="#3B82F6" stroke-width="1.2" marker-end="url(#arrB)"/>
+  <rect x="270" y="34" width="80" height="24" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="310" y="50" text-anchor="middle" font-family="monospace" font-size="9" fill="#1E40AF">Ship App</text>
+  <line x1="350" y1="46" x2="368" y2="46" stroke="#EF4444" stroke-width="1.5" marker-end="url(#arrB)"/>
+  <rect x="370" y="34" width="110" height="24" rx="4" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5"/>
+  <text x="425" y="46" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#B91C1C">Parse at launch</text>
+  <text x="425" y="57" text-anchor="middle" font-family="monospace" font-size="8" fill="#EF4444">costs startup time</text>
+  <line x1="480" y1="46" x2="498" y2="46" stroke="#EF4444" stroke-width="1.5" marker-end="url(#arrB)"/>
+  <rect x="500" y="34" width="110" height="24" rx="4" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5"/>
+  <text x="555" y="46" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#B91C1C">JIT warmup</text>
+  <text x="555" y="57" text-anchor="middle" font-family="monospace" font-size="8" fill="#EF4444">memory overhead</text>
+
+  <!-- AOT row -->
+  <text x="10" y="108" font-family="monospace" font-size="10" font-weight="bold" fill="#10B981">AOT (Hermes)</text>
+  <rect x="70" y="94" width="80" height="24" rx="4" fill="#DCFCE7" stroke="#10B981" stroke-width="1.2"/>
+  <text x="110" y="110" text-anchor="middle" font-family="monospace" font-size="9" fill="#065F46">Write JS</text>
+  <line x1="150" y1="106" x2="168" y2="106" stroke="#10B981" stroke-width="1.2" marker-end="url(#arrG2)"/>
+  <rect x="170" y="94" width="110" height="24" rx="4" fill="#A7F3D0" stroke="#10B981" stroke-width="1.5"/>
+  <text x="225" y="106" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#065F46">Compile to bytecode</text>
+  <text x="225" y="117" text-anchor="middle" font-family="monospace" font-size="8" fill="#059669">at build time ✓</text>
+  <line x1="280" y1="106" x2="298" y2="106" stroke="#10B981" stroke-width="1.2" marker-end="url(#arrG2)"/>
+  <rect x="300" y="94" width="80" height="24" rx="4" fill="#DCFCE7" stroke="#10B981" stroke-width="1.2"/>
+  <text x="340" y="110" text-anchor="middle" font-family="monospace" font-size="9" fill="#065F46">Ship .hbc</text>
+  <line x1="380" y1="106" x2="398" y2="106" stroke="#10B981" stroke-width="1.2" marker-end="url(#arrG2)"/>
+  <rect x="400" y="94" width="110" height="24" rx="4" fill="#6EE7B7" stroke="#059669" stroke-width="1.5"/>
+  <text x="455" y="106" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#065F46">Execute instantly</text>
+  <text x="455" y="117" text-anchor="middle" font-family="monospace" font-size="8" fill="#065F46">no parse, no warmup ✓</text>
+
+  <!-- Legend -->
+  <rect x="10" y="148" width="12" height="12" rx="2" fill="#FEE2E2" stroke="#EF4444" stroke-width="1"/>
+  <text x="28" y="159" font-family="monospace" font-size="9" fill="#B91C1C">Runtime cost (bad for mobile)</text>
+  <rect x="230" y="148" width="12" height="12" rx="2" fill="#DCFCE7" stroke="#10B981" stroke-width="1"/>
+  <text x="248" y="159" font-family="monospace" font-size="9" fill="#065F46">Build-time cost (free at runtime)</text>
+</svg>
+
+<h2 id="garbage-collection">Garbage Collection: Hades vs Orinoco</h2>
+
+<p>Garbage collection is where the performance difference between Hermes and V8 is most visible to end users. GC pauses are the invisible cause of jank — that momentary freeze when a FlatList stutters, or an animation drops frames for a split second.</p>
+
+<p>V8 uses <strong>Orinoco</strong>, a generational garbage collector with incremental and concurrent marking. Sophisticated and well-tuned for general-purpose workloads — but in a React Native app that's constantly allocating objects for component renders, Orinoco's stop-the-world pauses are noticeable on constrained devices.</p>
+
+<p>Hermes V1's <strong>Hades GC</strong> was designed specifically for this problem. Hades runs almost entirely on a background thread, using a concurrent marking algorithm that doesn't pause the main JS thread during collection. Stop-the-world phases in Hades are measured in microseconds rather than milliseconds.</p>
+
+<!-- DIAGRAM 5: GC Comparison -->
+<svg viewBox="0 0 720 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;margin:2rem auto;">
+  <text x="360" y="18" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#1E3A5F">GC Pause Impact on Main Thread</text>
+
+  <!-- V8 Orinoco -->
+  <text x="10" y="42" font-family="monospace" font-size="10" font-weight="bold" fill="#3B82F6">V8 Orinoco</text>
+  <text x="10" y="54" font-family="monospace" font-size="8" fill="#64748B">Main Thread:</text>
+
+  <rect x="90" y="42" width="100" height="18" rx="3" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+  <text x="140" y="55" text-anchor="middle" font-family="monospace" font-size="8" fill="#1E40AF">JS Execution</text>
+
+  <rect x="195" y="42" width="60" height="18" rx="3" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5"/>
+  <text x="225" y="55" text-anchor="middle" font-family="monospace" font-size="8" font-weight="bold" fill="#B91C1C">PAUSE</text>
+
+  <rect x="260" y="42" width="100" height="18" rx="3" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+  <text x="310" y="55" text-anchor="middle" font-family="monospace" font-size="8" fill="#1E40AF">JS Execution</text>
+
+  <rect x="365" y="42" width="60" height="18" rx="3" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5"/>
+  <text x="395" y="55" text-anchor="middle" font-family="monospace" font-size="8" font-weight="bold" fill="#B91C1C">PAUSE</text>
+
+  <rect x="430" y="42" width="100" height="18" rx="3" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+  <text x="480" y="55" text-anchor="middle" font-family="monospace" font-size="8" fill="#1E40AF">JS Execution</text>
+
+  <text x="545" y="55" font-family="monospace" font-size="9" fill="#EF4444">← dropped frames</text>
+
+  <!-- Hermes Hades -->
+  <text x="10" y="95" font-family="monospace" font-size="10" font-weight="bold" fill="#10B981">Hermes Hades</text>
+  <text x="10" y="107" font-family="monospace" font-size="8" fill="#64748B">Main Thread:</text>
+  <rect x="90" y="92" width="560" height="18" rx="3" fill="#DCFCE7" stroke="#10B981" stroke-width="1"/>
+  <text x="370" y="105" text-anchor="middle" font-family="monospace" font-size="8" fill="#065F46">JS Execution — uninterrupted ✓</text>
+
+  <text x="10" y="127" font-family="monospace" font-size="8" fill="#64748B">Background:</text>
+  <rect x="90" y="118" width="260" height="14" rx="3" fill="#A7F3D0" stroke="#059669" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="220" y="129" text-anchor="middle" font-family="monospace" font-size="8" fill="#065F46">GC marking + sweep (background thread)</text>
+
+  <text x="10" y="148" font-family="monospace" font-size="8" fill="#059669">Microsecond finalisation only — no visible jank</text>
+</svg>
+
+<h2 id="performance-numbers">Real Performance Numbers</h2>
+
+<p>The numbers below come from production migrations at Meta and Shopify — real apps, real users, real conditions. Your results will vary based on your app's architecture, native module usage, and target device profile. But these figures represent the realistic range of what Hermes V1 delivers.</p>
+
+<!-- DIAGRAM 6: Performance Stats -->
+<svg viewBox="0 0 720 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;margin:2rem auto;">
+  <!-- Card 1 -->
+  <rect x="10" y="10" width="160" height="80" rx="8" fill="#F0FDF4" stroke="#10B981" stroke-width="1.5"/>
+  <text x="90" y="45" text-anchor="middle" font-family="monospace" font-size="28" font-weight="bold" fill="#10B981">40%</text>
+  <text x="90" y="62" text-anchor="middle" font-family="monospace" font-size="9" fill="#065F46">Faster Cold Starts</text>
+  <text x="90" y="78" text-anchor="middle" font-family="monospace" font-size="8" fill="#6B7280">tap → interactive</text>
+
+  <!-- Card 2 -->
+  <rect x="190" y="10" width="160" height="80" rx="8" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5"/>
+  <text x="270" y="45" text-anchor="middle" font-family="monospace" font-size="28" font-weight="bold" fill="#F59E0B">39%</text>
+  <text x="270" y="62" text-anchor="middle" font-family="monospace" font-size="9" fill="#92400E">Faster Rendering</text>
+  <text x="270" y="78" text-anchor="middle" font-family="monospace" font-size="8" fill="#6B7280">frame render time</text>
+
+  <!-- Card 3 -->
+  <rect x="370" y="10" width="160" height="80" rx="8" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="450" y="45" text-anchor="middle" font-family="monospace" font-size="28" font-weight="bold" fill="#7C3AED">26%</text>
+  <text x="450" y="62" text-anchor="middle" font-family="monospace" font-size="9" fill="#4C1D95">Less Memory</text>
+  <text x="450" y="78" text-anchor="middle" font-family="monospace" font-size="8" fill="#6B7280">avg app lifecycle</text>
+
+  <!-- Card 4 -->
+  <rect x="550" y="10" width="160" height="80" rx="8" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="630" y="45" text-anchor="middle" font-family="monospace" font-size="28" font-weight="bold" fill="#3B82F6">&lt;800ms</text>
+  <text x="630" y="62" text-anchor="middle" font-family="monospace" font-size="9" fill="#1E40AF">Cold Start</text>
+  <text x="630" y="78" text-anchor="middle" font-family="monospace" font-size="8" fill="#6B7280">mid-range Android</text>
+</svg>
+
+<p>The cold start improvement is largely from eliminating JS parsing and TurboModules lazy loading. The rendering improvement comes from Hades GC reducing pauses during list scrolling. The memory improvement comes from both the compact bytecode format and Hades's more efficient heap management. Your mileage will vary — always benchmark your specific app before and after.</p>
+
+<h2 id="enabling-hermes">Enabling Hermes in Your Project</h2>
+
+<p>If you're on React Native 0.76 or higher, Hermes is already your default engine. You don't need to do anything. If you're on an older version or need to verify:</p>
+
+<p><strong>For bare React Native (Android):</strong></p>
+<pre><code># android/gradle.properties
+hermesEnabled=true</code></pre>
+
+<p><strong>For bare React Native (iOS) in your Podfile:</strong></p>
+<pre><code>use_react_native!(
+  :path => config[:reactNativePath],
+  :hermes_enabled => true
+)</code></pre>
+
+<p><strong>For Expo projects:</strong></p>
+<pre><code>// app.json
+{
+  "expo": {
+    "jsEngine": "hermes"
+  }
+}</code></pre>
+
+<p><strong>To verify Hermes is running at runtime:</strong></p>
+<pre><code>const isHermes = () => !!global.HermesInternal;
+console.log('Running on Hermes:', isHermes()); // true</code></pre>
+
+<h2 id="when-to-use-v8">When Would You Still Use V8?</h2>
+
+<p>Hermes is the right choice for the overwhelming majority of React Native apps. But there are edge cases where V8 — available via <code>react-native-v8</code> — makes sense:</p>
+
+<ul>
+  <li><strong>Apps with heavy sustained JavaScript computation</strong> — Complex algorithms, physics simulations, or heavy data processing that runs for extended periods. V8's TurboFan JIT will outperform Hermes on peak throughput once warmed up.</li>
+  <li><strong>React Native for macOS or Windows</strong> — Desktop platforms where startup time advantage is less critical and sustained execution performance matters more.</li>
+  <li><strong>Specific library compatibility issues</strong> — Rare, and increasingly uncommon as the ecosystem has fully embraced Hermes V1.</li>
+</ul>
+
+<p>For everything else — consumer mobile apps on iOS and Android — Hermes V1 is the answer.</p>
+
+<h2 id="debugging">Debugging With Hermes</h2>
+
+<p>One area where the Hermes developer experience used to lag behind V8 was debugging. Hermes V1 closes this gap significantly. The React Native DevTools (shipping with RN 0.76+) has full Hermes support including breakpoints, call stack inspection, heap snapshots, and CPU profiling. The Chrome DevTools debugger now works reliably with Hermes via the inspector protocol.</p>
+
+<pre><code># Enable Hermes inspector for debugging
+# In your app's dev menu → Debug → Open Debugger
+# Or via CLI:
+npx react-native start --experimental-debugger</code></pre>
+
+<h2 id="conclusion">The Bottom Line</h2>
+
+<p>The JavaScript engine question used to be more complicated than it needed to be. V8 was battle-tested and familiar. Hermes was fast at startup but felt limited. Hermes V1 changes that calculus permanently.</p>
+
+<p>With a rewritten compiler, a lightweight JIT tier, Hades concurrent garbage collection, and full modern JavaScript support, Hermes V1 isn't just the mobile-optimised option — it's the better option for React Native, full stop. React Native 0.84 made it the default for a reason.</p>
+
+<p>If you're still on a legacy React Native version without Hermes, or if you disabled it somewhere along the way, the upgrade path is straightforward and the performance gains are immediate. Your users — especially the ones on mid-range Android devices — will notice the difference.</p>
+
+<p>Understand your engine. Ship faster apps.</p>
+
+</body>
+</html>
