@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>Loop Engineering Explained: From Prompt Engineering to Loop Engineering — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-07-03">
+  <meta property="og:description" content="Loop engineering is the biggest paradigm shift in how we work with AI since prompt engineering. Instead of crafting the perfect prompt, you design the loop that does the prompting for you.">
+</head>
+<body>
+
+<p>For two years, we got really good at prompt engineering. We learned chain-of-thought, few-shot examples, system prompts — all the tricks. But in June 2026, something shifted. The people building the most powerful AI tools in the world stopped prompting entirely.</p>
+
+<p>They started writing loops.</p>
+
+<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:2rem 0;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/iFOORjKMgsw?si=TZ-ZAkWmZ3VGcKP4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+</div>
+
+<h2 id="the-old-way">The Old Way: Prompt Engineering</h2>
+
+<p>The prompt engineering workflow is straightforward. You craft a prompt, send it to the AI, read the output, and repeat. Every single turn requires your input. You are the bottleneck.</p>
+
+<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="20" width="120" height="70" rx="10" fill="#1E3A5F"/>
+  <text x="70" y="62" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">You</text>
+  <polygon points="145,55 160,45 160,65" fill="#0D9488"/>
+  <rect x="170" y="20" width="120" height="70" rx="10" fill="#475569"/>
+  <text x="230" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Craft</text>
+  <text x="230" y="72" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Prompt</text>
+  <polygon points="305,55 320,45 320,65" fill="#0D9488"/>
+  <rect x="330" y="20" width="120" height="70" rx="10" fill="#0D9488"/>
+  <text x="390" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">AI</text>
+  <text x="390" y="72" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Thinks</text>
+  <polygon points="465,55 480,45 480,65" fill="#0D9488"/>
+  <rect x="490" y="20" width="120" height="70" rx="10" fill="#1E3A5F"/>
+  <text x="550" y="62" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">Output</text>
+  <polygon points="625,55 640,45 640,65" fill="#EF4444"/>
+  <rect x="650" y="20" width="140" height="70" rx="10" fill="#EF4444"/>
+  <text x="720" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">You Read</text>
+  <text x="720" y="72" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">& Retry</text>
+</svg>
+
+<p>This has three fundamental problems:</p>
+
+<ul>
+<li><strong>One-shot with no self-correction</strong> — the AI doesn't look at its own work and say "that's wrong, let me try again."</li>
+<li><strong>Human bottleneck every turn</strong> — you're in the middle of every interaction.</li>
+<li><strong>Output quality equals prompt quality</strong> — if you write a bad prompt, you get bad output. There's a ceiling, and we've hit it.</li>
+</ul>
+
+<h2 id="the-new-way">The New Way: Loop Engineering</h2>
+
+<p>Loop engineering flips the entire model. Instead of prompting the AI every turn, you design a loop — a cycle where the AI plans what to do, executes it, evaluates its own output, and refines its approach. Then it goes around again until the job is done.</p>
+
+<svg viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg" style="max-width:420px;height:auto;margin:1.5rem auto;display:block;">
+  <circle cx="250" cy="200" r="55" fill="#0D9488"/>
+  <text x="250" y="205" text-anchor="middle" fill="white" font-family="sans-serif" font-size="16" font-weight="bold">LOOP</text>
+  <rect x="200" y="30" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="250" y="60" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Plan</text>
+  <rect x="380" y="170" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="430" y="200" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Execute</text>
+  <rect x="200" y="320" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="250" y="350" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Evaluate</text>
+  <rect x="20" y="170" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="70" y="200" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Refine</text>
+  <path d="M290,80 Q350,110 370,175" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <path d="M410,225 Q370,290 300,330" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <path d="M200,340 Q140,300 120,225" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <path d="M90,170 Q130,110 200,70" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0D9488"/>
+    </marker>
+  </defs>
+</svg>
+
+<p>The key insight: <strong>the AI prompts itself. You design the loop, set the goal, and let the system iterate.</strong></p>
+
+<p>Think about how Claude Code works. You say "fix this bug" and it loops — reads the code, tries a fix, runs the tests, sees the failure, adjusts, and tries again. That loop IS the intelligence, not the prompt.</p>
+
+<h2 id="the-viral-moment">June 2026: The Moment It Clicked</h2>
+
+<p>This whole thing exploded in the first two weeks of June 2026.</p>
+
+<p>Boris Cherny, the head of Claude Code at Anthropic, said it plainly: he doesn't prompt Claude anymore. His job is to write loops. He has agents that read his GitHub, Slack, and Twitter, and they decide what to build next.</p>
+
+<p>Then Peter Steinberger, creator of OpenClaw, posted twelve words that got over 6.5 million views on X in under 24 hours: stop prompting your coding agents and start designing loops that prompt your agents.</p>
+
+<p>Addy Osmani from Google published the essay that gave it a name — Loop Engineering. That's when everyone realized this isn't just a tip. It's a paradigm shift.</p>
+
+<h2 id="three-stage-evolution">Boris Cherny's 3-Stage Evolution</h2>
+
+<p>Boris described his own journey in three stages — and this maps to where most developers are right now.</p>
+
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="230" height="160" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="40" cy="40" r="16" fill="#475569"/>
+  <text x="40" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">01</text>
+  <text x="65" y="45" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Autocomplete</text>
+  <text x="30" y="75" fill="#475569" font-family="sans-serif" font-size="12">Writing code by hand.</text>
+  <text x="30" y="93" fill="#475569" font-family="sans-serif" font-size="12">AI suggests the next line.</text>
+  <rect x="30" y="120" width="80" height="24" rx="6" fill="#CCFBF1"/>
+  <text x="70" y="137" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">2023–2024</text>
+  <polygon points="255,90 275,80 275,100" fill="#0D9488"/>
+  <rect x="285" y="10" width="230" height="160" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="315" cy="40" r="16" fill="#0D9488"/>
+  <text x="315" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">02</text>
+  <text x="340" y="45" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Parallel Sessions</text>
+  <text x="305" y="75" fill="#475569" font-family="sans-serif" font-size="12">5–10 Claude sessions open.</text>
+  <text x="305" y="93" fill="#475569" font-family="sans-serif" font-size="12">You prompt each manually.</text>
+  <rect x="305" y="120" width="80" height="24" rx="6" fill="#CCFBF1"/>
+  <text x="345" y="137" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">Early 2025</text>
+  <polygon points="530,90 550,80 550,100" fill="#0D9488"/>
+  <rect x="560" y="10" width="230" height="160" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="590" cy="40" r="16" fill="#1E3A5F"/>
+  <text x="590" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">03</text>
+  <text x="615" y="45" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Loops</text>
+  <text x="580" y="75" fill="#475569" font-family="sans-serif" font-size="12">Agents read GitHub, Slack, X</text>
+  <text x="580" y="93" fill="#475569" font-family="sans-serif" font-size="12">and decide what to build.</text>
+  <rect x="580" y="120" width="80" height="24" rx="6" fill="#CCFBF1"/>
+  <text x="620" y="137" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">2026</text>
+</svg>
+
+<p>The receipts: in December 2025, 100% of Boris's contributions to Claude Code were written by Claude Code. 259 pull requests in 30 days. He deleted his IDE in November 2025 and hasn't opened it since.</p>
+
+<h2 id="five-building-blocks">The 5 Building Blocks of a Loop</h2>
+
+<p>Addy Osmani mapped out five building blocks, and both Claude Code and OpenAI Codex have converged on almost identical primitives:</p>
+
+<svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="140" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="80" cy="40" r="14" fill="#1E3A5F"/>
+  <text x="80" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">1</text>
+  <text x="80" y="72" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Goal</text>
+  <text x="80" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Stopping</text>
+  <text x="80" y="105" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">condition</text>
+  <rect x="170" y="10" width="140" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="240" cy="40" r="14" fill="#0D9488"/>
+  <text x="240" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">2</text>
+  <text x="240" y="72" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Scheduler</text>
+  <text x="240" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Cron, trigger,</text>
+  <text x="240" y="105" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">/loop interval</text>
+  <rect x="330" y="10" width="140" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="400" cy="40" r="14" fill="#7C3AED"/>
+  <text x="400" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">3</text>
+  <text x="400" y="72" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Verifier</text>
+  <text x="400" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Separate model</text>
+  <text x="400" y="105" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">grades output</text>
+  <rect x="490" y="10" width="140" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="560" cy="40" r="14" fill="#10B981"/>
+  <text x="560" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">4</text>
+  <text x="560" y="72" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Memory</text>
+  <text x="560" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">CLAUDE.md</text>
+  <text x="560" y="105" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">persists state</text>
+  <rect x="650" y="10" width="140" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="720" cy="40" r="14" fill="#F59E0B"/>
+  <text x="720" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">5</text>
+  <text x="720" y="72" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Isolation</text>
+  <text x="720" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Git worktrees</text>
+  <text x="720" y="105" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">for sub-agents</text>
+</svg>
+
+<ul>
+<li><strong>Goal</strong> — The stopping condition. "All tests pass and lint is clean." The loop runs until that's verified true.</li>
+<li><strong>Scheduler</strong> — How the loop fires. A cron job, a <code>/loop</code> command with an interval, GitHub Actions, or a manual trigger.</li>
+<li><strong>Verifier</strong> — A separate model checks whether the goal is met. The agent that wrote the code does not grade its own homework.</li>
+<li><strong>Memory</strong> — <code>CLAUDE.md</code> persists learnings across sessions. When an agent makes a mistake, the correction goes into memory so every future session knows about it.</li>
+<li><strong>Isolation</strong> — Git worktrees for parallel sub-agents. Without isolation, multiple agents editing the same files cause merge disasters.</li>
+</ul>
+
+<h2 id="real-loop-in-action">A Real Loop in Action</h2>
+
+<p>Here's Boris Cherny's own example. One command into Claude Code:</p>
+
+<pre><code>/loop babysit all my PRs. Auto-fix build issues.
+When comments come in, use a worktree agent to fix them.</code></pre>
+
+<p>That's the entire instruction. The loop then runs autonomously:</p>
+
+<svg viewBox="0 0 800 100" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="15" width="130" height="65" rx="8" fill="#1E3A5F"/>
+  <text x="75" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Monitors</text>
+  <text x="75" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">open PRs</text>
+  <polygon points="150,47 165,37 165,57" fill="#0D9488"/>
+  <rect x="175" y="15" width="130" height="65" rx="8" fill="#EF4444"/>
+  <text x="240" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Detects</text>
+  <text x="240" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">failing builds</text>
+  <polygon points="315,47 330,37 330,57" fill="#0D9488"/>
+  <rect x="340" y="15" width="130" height="65" rx="8" fill="#0D9488"/>
+  <text x="405" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Spawns</text>
+  <text x="405" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">worktree agent</text>
+  <polygon points="480,47 495,37 495,57" fill="#0D9488"/>
+  <rect x="505" y="15" width="130" height="65" rx="8" fill="#475569"/>
+  <text x="570" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Implements</text>
+  <text x="570" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">the fix</text>
+  <polygon points="645,47 660,37 660,57" fill="#0D9488"/>
+  <rect x="670" y="15" width="120" height="65" rx="8" fill="#10B981"/>
+  <text x="730" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Verifier</text>
+  <text x="730" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">confirms pass</text>
+</svg>
+
+<p>You didn't debug the failing test. You didn't review the fix. You wrote the intent and the stopping behavior, and the loop handled everything else. While you sleep. While you're in meetings. While you're thinking about what to build next.</p>
+
+<h2 id="prompt-vs-loop">Prompt Engineering vs Loop Engineering</h2>
+
+<table>
+<thead>
+<tr><th>Prompt Engineering</th><th>Loop Engineering</th></tr>
+</thead>
+<tbody>
+<tr><td>Single-shot interaction</td><td>Iterative self-correction</td></tr>
+<tr><td>Human in every turn</td><td>Human sets goal, AI executes</td></tr>
+<tr><td>Quality = prompt quality</td><td>Quality = loop design</td></tr>
+<tr><td>One agent, one task</td><td>Multi-agent, parallel work</td></tr>
+<tr><td>Manual context loading</td><td>CLAUDE.md persists memory</td></tr>
+<tr><td>You watch the output</td><td>Verifier model watches output</td></tr>
+</tbody>
+</table>
+
+<h2 id="cost-reality">The Cost Reality</h2>
+
+<p>Loop engineering is powerful, but token costs compound faster than almost anyone expects.</p>
+
+<svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="240" height="120" rx="12" fill="#1E3A5F"/>
+  <text x="130" y="55" text-anchor="middle" fill="#EF4444" font-family="sans-serif" font-size="42" font-weight="bold">10x</text>
+  <text x="130" y="85" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">Token cost multiplier</text>
+  <text x="130" y="102" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">in agentic loops</text>
+  <rect x="280" y="10" width="240" height="120" rx="12" fill="#1E3A5F"/>
+  <text x="400" y="55" text-anchor="middle" fill="#F59E0B" font-family="sans-serif" font-size="42" font-weight="bold">13M</text>
+  <text x="400" y="85" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">Tokens burned in one</text>
+  <text x="400" y="102" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">25-hour unattended run</text>
+  <rect x="550" y="10" width="240" height="120" rx="12" fill="#1E3A5F"/>
+  <text x="670" y="55" text-anchor="middle" fill="#10B981" font-family="sans-serif" font-size="42" font-weight="bold">30K</text>
+  <text x="670" y="85" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">Lines of code from a</text>
+  <text x="670" y="102" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">single loop session</text>
+</svg>
+
+<p>The critical warning: <strong>an unattended loop without a verifier is a money furnace.</strong> If the loop can't tell when it's done, it just keeps running and burning tokens. Always set budget guards. Always have a verifier. Always have a clear stopping condition.</p>
+
+<h2 id="how-to-start">How to Start Loop Engineering Today</h2>
+
+<p>Four concrete steps you can take right now:</p>
+
+<ol>
+<li><strong>Write a CLAUDE.md</strong> — Document your project context, coding patterns, and rules. This becomes your loop's persistent memory.</li>
+<li><strong>Use /goal</strong> — Set a verifiable stopping condition. "All tests pass" is a good goal. "Make it better" is a terrible goal because the verifier can't check it.</li>
+<li><strong>Start small</strong> — Begin with <code>/loop</code> on a single PR. Watch how it works. Build confidence. Understand the token economics.</li>
+<li><strong>Add verifiers</strong> — Never let an agent grade its own work. Use a separate, often smaller and faster model specifically for checking whether the goal condition is met.</li>
+</ol>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>The leverage point has moved. It's no longer about crafting the perfect prompt. It's about designing the loop that does the prompting for you.</p>
+
+<p>Boris Cherny isn't saying engineers are obsolete. He's saying the opposite — great engineers matter more than ever. Someone still has to decide what to build, talk to customers, coordinate teams. But the execution? That's what loops are for.</p>
+
+<p>The job didn't vanish. It moved up an altitude. From writing the code to writing the thing that writes the code.</p>
+
+<p><strong>Stop prompting. Start designing loops.</strong></p>
+
+<hr/>
+
+<p>If this was useful, check out the companion video on <a href="https://www.youtube.com/watch?v=sDkx_hz67ko">Context Engineering</a> — it covers what the AI <em>sees</em> while the loop runs.</p>
+
+</body>
+</html>

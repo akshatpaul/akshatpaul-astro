@@ -2,8 +2,12 @@
 interface Props {
   title: string;
   description?: string;
+  image?: string;
+  url?: string;
 }
-const { title, description } = Astro.props;
+const DEFAULT_IMAGE = '/wp-content/uploads/2022/12/react-native-eu-akshat-paul-1-modified.png';
+const { title, description, image = DEFAULT_IMAGE, url } = Astro.props;
+const absoluteImage = image.startsWith('http') ? image : `https://akshatpaul.com${image}`;
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -12,6 +16,17 @@ const { title, description } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title}</title>
   {description && <meta name="description" content={description} />}
+  {url && <link rel="canonical" href={url} />}
+  <meta property="og:site_name" content="AkshatPaul.com" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  {url && <meta property="og:url" content={url} />}
+  {description && <meta property="og:description" content={description} />}
+  <meta property="og:image" content={absoluteImage} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  {description && <meta name="twitter:description" content={description} />}
+  <meta name="twitter:image" content={absoluteImage} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500&family=Rubik:wght@500;600;700&display=swap" rel="stylesheet" />

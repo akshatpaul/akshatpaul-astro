@@ -6,12 +6,15 @@ import SiteFooter from '../components/SiteFooter.astro';
 interface Props {
   title: string;
   date?: string;
+  description?: string;
+  image?: string;
+  url?: string;
   customStyles?: string;
   prevPost?: { slug: string; title: string };
   nextPost?: { slug: string; title: string };
 }
 
-const { title, date, customStyles, prevPost, nextPost } = Astro.props;
+const { title, date, description, image, url, customStyles, prevPost, nextPost } = Astro.props;
 
 function formatDate(iso?: string) {
   if (!iso) return '';
@@ -19,7 +22,7 @@ function formatDate(iso?: string) {
 }
 ---
 
-<BaseLayout title={`${title} — Akshat Paul`}>
+<BaseLayout title={`${title} — Akshat Paul`} description={description} image={image} url={url}>
   <SiteNav />
 
   {customStyles && <Fragment set:html={`<style>${customStyles}</style>`} />}

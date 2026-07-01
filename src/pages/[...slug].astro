@@ -4,6 +4,7 @@ import path from 'node:path';
 import PostLayout from '../layouts/PostLayout.astro';
 
 const POST_ORDER = [
+  { slug: 'loop-engineering-explained', title: 'Loop Engineering Explained: From Prompt Engineering to Loop Engineering' },
   { slug: 'hermes-v1-vs-v8-react-native', title: 'Hermes V1 vs V8: The JavaScript Engine Deep Dive for React Native 0.84' },
   { slug: 'react-native-new-architecture-2026', title: 'React Native New Architecture 2026: JSI, Fabric, TurboModules & How to Migrate' },
   { slug: 'building-a-react-native-tv-application-with-react-native-tvos', title: 'Building a React Native TV Application' },
@@ -60,6 +61,8 @@ if (!isBlogPost) {
 // --- Blog post path ---
 let postTitle = '';
 let postDate = '';
+let postDescription = '';
+let postImage = '';
 let postContent = '';
 let customStyles = '';
 let prevPost: { slug: string; title: string } | undefined;
@@ -87,6 +90,16 @@ if (isBlogPost && fs.existsSync(htmlPath)) {
 
   const dateMatch = raw.match(/article:published_time["'][^>]+content=["']([^"'T]+)/);
   postDate = dateMatch ? dateMatch[1] : '';
+
+  const descMatch =
+    raw.match(/property=["']og:description["']\s+content="([^"]*)"/) ||
+    raw.match(/property=["']og:description["']\s+content='([^']*)'/);
+  postDescription = descMatch ? decodeEntities(descMatch[1]) : '';
+
+  const videoMatch = raw.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+  postImage = videoMatch
+    ? `https://img.youtube.com/vi/${videoMatch[1]}/maxresdefault.jpg`
+    : '/wp-content/uploads/2022/12/react-native-eu-akshat-paul-1-modified.png';
 
   const styleMatches = [...raw.matchAll(/<style>([\s\S]*?)<\/style>/g)];
   customStyles = styleMatches
@@ -125,7 +138,7 @@ if (isBlogPost && fs.existsSync(htmlPath)) {
 ---
 
 {isBlogPost ? (
-  <PostLayout title={postTitle} date={postDate} customStyles={customStyles} prevPost={prevPost} nextPost={nextPost}>
+  <PostLayout title={postTitle} date={postDate} description={postDescription} image={postImage} url={`https://akshatpaul.com/${slug}/`} customStyles={customStyles} prevPost={prevPost} nextPost={nextPost}>
     <Fragment set:html={postContent} />
   </PostLayout>
 ) : (
