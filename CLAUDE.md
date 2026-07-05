@@ -84,14 +84,15 @@ This regenerates the sitemap and compiles all pages.
 
 Ordered newest → oldest. This order drives the prev/next navigation on post pages.
 
-1. `context-engineering-explained` — Context Engineering Explained: Why Prompt Engineering Is No Longer Enough
-2. `loop-engineering-explained` — Loop Engineering Explained: From Prompt Engineering to Loop Engineering
-3. `hermes-v1-vs-v8-react-native` — Hermes V1 vs V8: The JavaScript Engine Deep Dive for React Native 0.84
-4. `react-native-new-architecture-2026` — React Native New Architecture 2026
-5. `building-a-react-native-tv-application-with-react-native-tvos` — Building a React Native TV Application
-6. `introduction-to-aws-amplify` — Introduction to AWS Amplify
-7. `programming-made-easy-with-ruby-enumerables` — Programming made easy with Ruby Enumerables
-8. `how-to-start-building-mobile-apps-in-10-mins-with-react-native` — How to start building Mobile apps in 10 mins?
+1. `mcp-tools-vs-resources-vs-prompts` — MCP Tools vs Resources vs Prompts: What's the Actual Difference?
+2. `context-engineering-explained` — Context Engineering Explained: Why Prompt Engineering Is No Longer Enough
+3. `loop-engineering-explained` — Loop Engineering Explained: From Prompt Engineering to Loop Engineering
+4. `hermes-v1-vs-v8-react-native` — Hermes V1 vs V8: The JavaScript Engine Deep Dive for React Native 0.84
+5. `react-native-new-architecture-2026` — React Native New Architecture 2026
+6. `building-a-react-native-tv-application-with-react-native-tvos` — Building a React Native TV Application
+7. `introduction-to-aws-amplify` — Introduction to AWS Amplify
+8. `programming-made-easy-with-ruby-enumerables` — Programming made easy with Ruby Enumerables
+9. `how-to-start-building-mobile-apps-in-10-mins-with-react-native` — How to start building Mobile apps in 10 mins?
 
 ---
 

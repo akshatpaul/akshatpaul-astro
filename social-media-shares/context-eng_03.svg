@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Write -->
+  <rect x="10" y="10" width="180" height="120" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="100" cy="42" r="16" fill="#1E3A5F"/>
+  <text x="100" y="47" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">01</text>
+  <text x="100" y="78" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Write</text>
+  <text x="100" y="98" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Structure raw info</text>
+  <text x="100" y="113" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">into reasoned text</text>
+  <!-- Arrow -->
+  <polygon points="200,70 215,60 215,80" fill="#0D9488"/>
+  <!-- Select -->
+  <rect x="220" y="10" width="180" height="120" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="310" cy="42" r="16" fill="#0D9488"/>
+  <text x="310" y="47" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">02</text>
+  <text x="310" y="78" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Select</text>
+  <text x="310" y="98" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Retrieve only what's</text>
+  <text x="310" y="113" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">relevant. Not keyword dump.</text>
+  <!-- Arrow -->
+  <polygon points="410,70 425,60 425,80" fill="#0D9488"/>
+  <!-- Compress -->
+  <rect x="430" y="10" width="180" height="120" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="520" cy="42" r="16" fill="#7C3AED"/>
+  <text x="520" y="47" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">03</text>
+  <text x="520" y="78" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Compress</text>
+  <text x="520" y="98" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Summarize and distill.</text>
+  <text x="520" y="113" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Less beats more.</text>
+  <!-- Arrow -->
+  <polygon points="620,70 635,60 635,80" fill="#0D9488"/>
+  <!-- Isolate -->
+  <rect x="640" y="10" width="150" height="120" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="715" cy="42" r="16" fill="#10B981"/>
+  <text x="715" y="47" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">04</text>
+  <text x="715" y="78" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Isolate</text>
+  <text x="715" y="98" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Each agent sees only</text>
+  <text x="715" y="113" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">what it needs.</text>
+</svg>

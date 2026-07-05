@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="230" height="160" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="40" cy="40" r="16" fill="#475569"/>
+  <text x="40" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">01</text>
+  <text x="65" y="45" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Autocomplete</text>
+  <text x="30" y="75" fill="#475569" font-family="sans-serif" font-size="12">Writing code by hand.</text>
+  <text x="30" y="93" fill="#475569" font-family="sans-serif" font-size="12">AI suggests the next line.</text>
+  <rect x="30" y="120" width="80" height="24" rx="6" fill="#CCFBF1"/>
+  <text x="70" y="137" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">2023–2024</text>
+  <polygon points="255,90 275,80 275,100" fill="#0D9488"/>
+  <rect x="285" y="10" width="230" height="160" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="315" cy="40" r="16" fill="#0D9488"/>
+  <text x="315" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">02</text>
+  <text x="340" y="45" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Parallel Sessions</text>
+  <text x="305" y="75" fill="#475569" font-family="sans-serif" font-size="12">5–10 Claude sessions open.</text>
+  <text x="305" y="93" fill="#475569" font-family="sans-serif" font-size="12">You prompt each manually.</text>
+  <rect x="305" y="120" width="80" height="24" rx="6" fill="#CCFBF1"/>
+  <text x="345" y="137" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">Early 2025</text>
+  <polygon points="530,90 550,80 550,100" fill="#0D9488"/>
+  <rect x="560" y="10" width="230" height="160" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <circle cx="590" cy="40" r="16" fill="#1E3A5F"/>
+  <text x="590" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">03</text>
+  <text x="615" y="45" fill="#1E3A5F" font-family="sans-serif" font-size="15" font-weight="bold">Loops</text>
+  <text x="580" y="75" fill="#475569" font-family="sans-serif" font-size="12">Agents read GitHub, Slack, X</text>
+  <text x="580" y="93" fill="#475569" font-family="sans-serif" font-size="12">and decide what to build.</text>
+  <rect x="580" y="120" width="80" height="24" rx="6" fill="#CCFBF1"/>
+  <text x="620" y="137" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">2026</text>
+</svg>

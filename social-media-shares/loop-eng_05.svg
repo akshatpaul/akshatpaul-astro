@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 100" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="15" width="130" height="65" rx="8" fill="#1E3A5F"/>
+  <text x="75" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Monitors</text>
+  <text x="75" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">open PRs</text>
+  <polygon points="150,47 165,37 165,57" fill="#0D9488"/>
+  <rect x="175" y="15" width="130" height="65" rx="8" fill="#EF4444"/>
+  <text x="240" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Detects</text>
+  <text x="240" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">failing builds</text>
+  <polygon points="315,47 330,37 330,57" fill="#0D9488"/>
+  <rect x="340" y="15" width="130" height="65" rx="8" fill="#0D9488"/>
+  <text x="405" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Spawns</text>
+  <text x="405" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">worktree agent</text>
+  <polygon points="480,47 495,37 495,57" fill="#0D9488"/>
+  <rect x="505" y="15" width="130" height="65" rx="8" fill="#475569"/>
+  <text x="570" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Implements</text>
+  <text x="570" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">the fix</text>
+  <polygon points="645,47 660,37 660,57" fill="#0D9488"/>
+  <rect x="670" y="15" width="120" height="65" rx="8" fill="#10B981"/>
+  <text x="730" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Verifier</text>
+  <text x="730" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">confirms pass</text>
+</svg>

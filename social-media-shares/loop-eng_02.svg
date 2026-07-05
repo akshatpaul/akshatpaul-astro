@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg" style="max-width:420px;height:auto;margin:1.5rem auto;display:block;">
+  <circle cx="250" cy="200" r="55" fill="#0D9488"/>
+  <text x="250" y="205" text-anchor="middle" fill="white" font-family="sans-serif" font-size="16" font-weight="bold">LOOP</text>
+  <rect x="200" y="30" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="250" y="60" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Plan</text>
+  <rect x="380" y="170" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="430" y="200" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Execute</text>
+  <rect x="200" y="320" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="250" y="350" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Evaluate</text>
+  <rect x="20" y="170" width="100" height="50" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="70" y="200" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">Refine</text>
+  <path d="M290,80 Q350,110 370,175" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <path d="M410,225 Q370,290 300,330" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <path d="M200,340 Q140,300 120,225" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <path d="M90,170 Q130,110 200,70" fill="none" stroke="#0D9488" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0D9488"/>
+    </marker>
+  </defs>
+</svg>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>MCP Tools vs Resources vs Prompts: What's the Actual Difference? — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-07-03">
+  <meta property="og:description" content="MCP defines three primitives — Tools, Resources, and Prompts — and most developers confuse them. The difference comes down to one question: who controls when it runs?">
+</head>
+<body>
+
+<p>When developers start working with Model Context Protocol, the first thing that trips them up is the same question every time: what's the difference between Tools, Resources, and Prompts? They all live in the same server. They all get declared the same way. And in some cases, they can do the exact same thing.</p>
+
+<p>But they serve completely different purposes. And if you pick the wrong one, your AI integration will feel awkward at best and broken at worst.</p>
+
+<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:2rem 0;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/YOUR_VIDEO_ID" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+</div>
+
+<h2 id="one-question">One Question That Separates All Three</h2>
+
+<p>The entire distinction comes down to a single question: <strong>who decides when it runs?</strong></p>
+
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Tools -->
+  <rect x="10" y="10" width="240" height="160" rx="12" fill="#1E3A5F"/>
+  <text x="130" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="20" font-weight="bold">Tools</text>
+  <line x1="60" y1="58" x2="200" y2="58" stroke="#0D9488" stroke-width="2"/>
+  <text x="130" y="85" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="14" font-weight="bold">Model-Controlled</text>
+  <text x="130" y="110" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">The AI decides</text>
+  <text x="130" y="128" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="12">when to call it</text>
+  <text x="130" y="155" text-anchor="middle" fill="#F59E0B" font-family="sans-serif" font-size="11" font-weight="bold">→ Actions & Side Effects</text>
+  <!-- Resources -->
+  <rect x="280" y="10" width="240" height="160" rx="12" fill="#0D9488"/>
+  <text x="400" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="20" font-weight="bold">Resources</text>
+  <line x1="330" y1="58" x2="470" y2="58" stroke="#CCFBF1" stroke-width="2"/>
+  <text x="400" y="85" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="14" font-weight="bold">App-Controlled</text>
+  <text x="400" y="110" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12">The host app decides</text>
+  <text x="400" y="128" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12">when to load it</text>
+  <text x="400" y="155" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="11" font-weight="bold">→ Read-Only Data</text>
+  <!-- Prompts -->
+  <rect x="550" y="10" width="240" height="160" rx="12" fill="#7C3AED"/>
+  <text x="670" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="20" font-weight="bold">Prompts</text>
+  <line x1="600" y1="58" x2="740" y2="58" stroke="#C4B5FD" stroke-width="2"/>
+  <text x="670" y="85" text-anchor="middle" fill="#C4B5FD" font-family="sans-serif" font-size="14" font-weight="bold">User-Controlled</text>
+  <text x="670" y="110" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12">The user explicitly</text>
+  <text x="670" y="128" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12">selects it</text>
+  <text x="670" y="155" text-anchor="middle" fill="#F59E0B" font-family="sans-serif" font-size="11" font-weight="bold">→ Templates & Workflows</text>
+</svg>
+
+<p>That's it. Tools are model-controlled — the AI decides when to call them. Resources are application-controlled — the host app decides when to load them. Prompts are user-controlled — the user explicitly selects them. Get this one distinction right and the rest of your MCP server design falls into place.</p>
+
+<h2 id="tools">Tools: The AI Takes Action</h2>
+
+<p>Tools are functions the AI model can discover and invoke automatically during a conversation. When a user says "deploy the latest build to staging," the model evaluates available tools, picks the right one, constructs the arguments, and calls it.</p>
+
+<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="20" width="140" height="70" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="80" y="55" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="12" font-weight="bold">User asks</text>
+  <text x="80" y="72" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">"Deploy to staging"</text>
+  <polygon points="165,55 180,45 180,65" fill="#0D9488"/>
+  <rect x="195" y="20" width="140" height="70" rx="10" fill="#1E3A5F"/>
+  <text x="265" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Model picks</text>
+  <text x="265" y="68" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">deploy_to_staging()</text>
+  <polygon points="350,55 365,45 365,65" fill="#0D9488"/>
+  <rect x="380" y="20" width="140" height="70" rx="10" fill="#0D9488"/>
+  <text x="450" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Tool executes</text>
+  <text x="450" y="68" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">Side effects happen</text>
+  <polygon points="535,55 550,45 550,65" fill="#0D9488"/>
+  <rect x="565" y="20" width="140" height="70" rx="10" fill="#10B981"/>
+  <text x="635" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Result returns</text>
+  <text x="635" y="68" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">to the model</text>
+</svg>
+
+<p>The key trait: tools are <strong>called, they do something, they return a result</strong>. Use tools when:</p>
+
+<ul>
+<li><strong>Actions with side effects</strong> — creating records, sending messages, triggering deployments, executing transactions. Anything that changes state.</li>
+<li><strong>Computations requiring external processing</strong> — running database queries, calling APIs, performing calculations the model can't do natively.</li>
+<li><strong>Dynamic data retrieval</strong> — when the query depends on conversation context, like "search for tickets assigned to me."</li>
+</ul>
+
+<pre><code>// MCP Tool definition
+server.tool("deploy_to_staging", {
+  description: "Deploy a branch to the staging environment",
+  inputSchema: {
+    branch: { type: "string" },
+    service: { type: "string" }
+  }
+}, async ({ branch, service }) => {
+  const result = await deploy(branch, service);
+  return { text: `Deployed ${branch} to staging` };
+});</code></pre>
+
+<h2 id="resources">Resources: Read-Only Context</h2>
+
+<p>Resources are structured, read-only data that the host application loads as context. They're identified by URIs and they never perform actions — they just provide information.</p>
+
+<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="20" width="160" height="70" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="90" y="50" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="12" font-weight="bold">Host app decides</text>
+  <text x="90" y="68" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">"Load this context"</text>
+  <polygon points="185,55 200,45 200,65" fill="#0D9488"/>
+  <rect x="215" y="20" width="160" height="70" rx="10" fill="#0D9488"/>
+  <text x="295" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Resource fetched</text>
+  <text x="295" y="68" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">db://schema</text>
+  <polygon points="390,55 405,45 405,65" fill="#0D9488"/>
+  <rect x="420" y="20" width="180" height="70" rx="10" fill="#CCFBF1" stroke="#0D9488" stroke-width="1.5"/>
+  <text x="510" y="50" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="12" font-weight="bold">Added to context</text>
+  <text x="510" y="68" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Model can reason over it</text>
+  <polygon points="615,55 630,45 630,65" fill="#0D9488"/>
+  <rect x="645" y="20" width="145" height="70" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="717" y="50" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="12" font-weight="bold">No side effects</text>
+  <text x="717" y="68" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Read-only always</text>
+</svg>
+
+<p>This is the #1 confusion developers have: "Why can't I just use a tool to fetch data?" You can. But here's the difference — <strong>the model cannot autonomously request a resource</strong> the way it can call a tool. The user or the application loads it. If you need the model to dynamically fetch data based on conversation, use a tool. If you need to pre-load static context, use a resource.</p>
+
+<p>Use resources for:</p>
+
+<ul>
+<li><strong>Database schemas</strong> — semi-static metadata the model needs as context</li>
+<li><strong>Configuration files</strong> — app settings, environment details</li>
+<li><strong>Documentation</strong> — API specs, README content, coding standards</li>
+<li><strong>File contents</strong> — source code, templates, data files</li>
+</ul>
+
+<pre><code>// MCP Resource definition
+server.resource(
+  "db-schema",
+  "db://schema",
+  { description: "Database table schemas" },
+  async () => ({
+    contents: [{
+      uri: "db://schema",
+      mimeType: "application/json",
+      text: JSON.stringify(await getDbSchema())
+    }]
+  })
+);</code></pre>
+
+<h2 id="prompts">Prompts: User-Selected Templates</h2>
+
+<p>Prompts are predefined templates that the user explicitly selects. Think slash commands — <code>/code-review</code>, <code>/weekly-report</code>, <code>/explain-error</code>. The model never invokes a prompt on its own.</p>
+
+<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="20" width="160" height="70" rx="10" fill="#7C3AED"/>
+  <text x="90" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">User selects</text>
+  <text x="90" y="68" text-anchor="middle" fill="#C4B5FD" font-family="sans-serif" font-size="10">/code-review</text>
+  <polygon points="185,55 200,45 200,65" fill="#7C3AED"/>
+  <rect x="215" y="20" width="175" height="70" rx="10" fill="#F8FAFC" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="302" y="50" text-anchor="middle" fill="#7C3AED" font-family="sans-serif" font-size="12" font-weight="bold">Template fills</text>
+  <text x="302" y="68" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">with user's params</text>
+  <polygon points="405,55 420,45 420,65" fill="#7C3AED"/>
+  <rect x="435" y="20" width="175" height="70" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="522" y="50" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="12" font-weight="bold">Structured message</text>
+  <text x="522" y="68" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">sent to model</text>
+  <polygon points="625,55 640,45 640,65" fill="#7C3AED"/>
+  <rect x="655" y="20" width="135" height="70" rx="10" fill="#7C3AED"/>
+  <text x="722" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Consistent</text>
+  <text x="722" y="68" text-anchor="middle" fill="#C4B5FD" font-family="sans-serif" font-size="10">output every time</text>
+</svg>
+
+<p>Prompts solve a specific problem: <strong>when teams embed complex instructions in tool descriptions or system prompts instead of defining reusable templates</strong>. This leads to inconsistent behavior across different hosts and makes it hard to update interaction patterns without redeploying.</p>
+
+<p>Use prompts for:</p>
+
+<ul>
+<li><strong>Code review workflows</strong> — standardized review checklist</li>
+<li><strong>Report generation</strong> — weekly sales report, sprint summary</li>
+<li><strong>Onboarding</strong> — explain this codebase to a new developer</li>
+<li><strong>Domain-specific helpers</strong> — any repeatable workflow worth naming</li>
+</ul>
+
+<pre><code>// MCP Prompt definition
+server.prompt(
+  "code-review",
+  { file: { type: "string" } },
+  async ({ file }) => ({
+    messages: [{
+      role: "user",
+      content: `Review this code for bugs, security
+issues, and performance. Be specific with line
+numbers.\n\nFile: ${file}`
+    }]
+  })
+);</code></pre>
+
+<h2 id="decision-framework">The Decision Framework</h2>
+
+<p>When you're building an MCP server, ask two questions for every capability:</p>
+
+<svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Question 1 -->
+  <rect x="230" y="10" width="340" height="50" rx="10" fill="#1E3A5F"/>
+  <text x="400" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Who should control when this runs?</text>
+  <!-- Branches -->
+  <line x1="300" y1="60" x2="130" y2="100" stroke="#475569" stroke-width="2"/>
+  <line x1="400" y1="60" x2="400" y2="100" stroke="#475569" stroke-width="2"/>
+  <line x1="500" y1="60" x2="670" y2="100" stroke="#475569" stroke-width="2"/>
+  <!-- AI decides -->
+  <rect x="30" y="100" width="200" height="45" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="130" y="128" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="12">AI decides autonomously</text>
+  <line x1="130" y1="145" x2="130" y2="170" stroke="#1E3A5F" stroke-width="2"/>
+  <rect x="30" y="170" width="200" height="40" rx="8" fill="#1E3A5F"/>
+  <text x="130" y="195" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">→ Tool</text>
+  <!-- App decides -->
+  <rect x="300" y="100" width="200" height="45" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="400" y="128" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="12">App loads background data</text>
+  <line x1="400" y1="145" x2="400" y2="170" stroke="#0D9488" stroke-width="2"/>
+  <rect x="300" y="170" width="200" height="40" rx="8" fill="#0D9488"/>
+  <text x="400" y="195" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">→ Resource</text>
+  <!-- User decides -->
+  <rect x="570" y="100" width="200" height="45" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="670" y="128" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="12">User explicitly selects</text>
+  <line x1="670" y1="145" x2="670" y2="170" stroke="#7C3AED" stroke-width="2"/>
+  <rect x="570" y="170" width="200" height="40" rx="8" fill="#7C3AED"/>
+  <text x="670" y="195" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">→ Prompt</text>
+  <!-- Question 2 -->
+  <rect x="230" y="230" width="340" height="45" rx="10" fill="#F8FAFC" stroke="#0D9488" stroke-width="1.5"/>
+  <text x="400" y="258" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="12" font-weight="bold">Does it perform an action or provide data?</text>
+</svg>
+
+<p><strong>Question 1: Who should control when this runs?</strong> If the AI should decide autonomously → Tool. If the app should load background data → Resource. If the user should explicitly choose → Prompt.</p>
+
+<p><strong>Question 2: Does it perform an action or provide data?</strong> Actions (write, create, send, execute) → almost always a Tool. Static or semi-static data → usually a Resource. Structured conversation starters → Prompts.</p>
+
+<h2 id="real-example">Real-World Example: PostgreSQL MCP Server</h2>
+
+<p>Here's how you'd split capabilities for a database MCP server:</p>
+
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Resource column -->
+  <rect x="10" y="10" width="240" height="180" rx="12" fill="#CCFBF1" stroke="#0D9488" stroke-width="1.5"/>
+  <text x="130" y="38" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="15" font-weight="bold">Resource</text>
+  <text x="130" y="55" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10">db://schema</text>
+  <rect x="25" y="70" width="210" height="28" rx="4" fill="white"/>
+  <text x="130" y="89" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Table schemas & columns</text>
+  <rect x="25" y="103" width="210" height="28" rx="4" fill="white"/>
+  <text x="130" y="122" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Relationships & types</text>
+  <rect x="25" y="136" width="210" height="28" rx="4" fill="white"/>
+  <text x="130" y="155" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Index definitions</text>
+  <!-- Tool column -->
+  <rect x="280" y="10" width="240" height="180" rx="12" fill="#1E3A5F"/>
+  <text x="400" y="38" text-anchor="middle" fill="white" font-family="sans-serif" font-size="15" font-weight="bold">Tool</text>
+  <text x="400" y="55" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">run_query()</text>
+  <rect x="295" y="70" width="210" height="28" rx="4" fill="#152D4A"/>
+  <text x="400" y="89" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="11">Execute SQL queries</text>
+  <rect x="295" y="103" width="210" height="28" rx="4" fill="#152D4A"/>
+  <text x="400" y="122" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="11">Insert / update records</text>
+  <rect x="295" y="136" width="210" height="28" rx="4" fill="#152D4A"/>
+  <text x="400" y="155" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="11">Run migrations</text>
+  <!-- Prompt column -->
+  <rect x="550" y="10" width="240" height="180" rx="12" fill="#EDE9FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="670" y="38" text-anchor="middle" fill="#7C3AED" font-family="sans-serif" font-size="15" font-weight="bold">Prompt</text>
+  <text x="670" y="55" text-anchor="middle" fill="#7C3AED" font-family="sans-serif" font-size="10">/explain-query</text>
+  <rect x="565" y="70" width="210" height="28" rx="4" fill="white"/>
+  <text x="670" y="89" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Explain a query plan</text>
+  <rect x="565" y="103" width="210" height="28" rx="4" fill="white"/>
+  <text x="670" y="122" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Generate migration script</text>
+  <rect x="565" y="136" width="210" height="28" rx="4" fill="white"/>
+  <text x="670" y="155" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Audit table for issues</text>
+</svg>
+
+<p>The schema is a Resource — semi-static, loaded at session start. Query execution is a Tool — the model decides when and what to query based on conversation. Explaining a query or auditing a table is a Prompt — the user explicitly triggers it.</p>
+
+<h2 id="common-mistakes">Three Mistakes Everyone Makes</h2>
+
+<ul>
+<li><strong>Using a tool when you need a resource</strong> — If data is static and the model doesn't need to decide when to fetch it, don't waste a tool call. Load it as a resource. Cheaper, faster, cleaner.</li>
+<li><strong>Skipping prompts entirely</strong> — Teams embed complex instructions in tool descriptions or system prompts instead of defining reusable templates. This makes behavior inconsistent across different hosts.</li>
+<li><strong>Using a resource for dynamic data</strong> — If the data retrieval depends on conversation context (like searching a knowledge base), it needs to be a tool. Resources can't accept runtime parameters from the model.</li>
+</ul>
+
+<h2 id="host-support">A Note on Host Support</h2>
+
+<p>Not all hosts support all three primitives equally. Tools and Resources work across Claude Desktop, Cursor, VS Code, and Windsurf. Prompt support varies — Claude Desktop shows them as slash commands, but some hosts don't expose prompts in their UI at all. Check your target host before building heavy prompt workflows.</p>
+
+<h2 id="how-they-work-together">How All Three Work Together</h2>
+
+<p>In a real workflow, all three primitives complement each other:</p>
+
+<svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="25" width="200" height="80" rx="10" fill="#7C3AED"/>
+  <text x="110" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Prompt</text>
+  <text x="110" y="75" text-anchor="middle" fill="#C4B5FD" font-family="sans-serif" font-size="11">structures the intent</text>
+  <text x="110" y="92" text-anchor="middle" fill="#C4B5FD" font-family="sans-serif" font-size="10">/weekly-report</text>
+  <polygon points="225,65 245,55 245,75" fill="#475569"/>
+  <rect x="260" y="25" width="200" height="80" rx="10" fill="#0D9488"/>
+  <text x="360" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Resource</text>
+  <text x="360" y="75" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="11">provides the data</text>
+  <text x="360" y="92" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">db://schema loaded</text>
+  <polygon points="475,65 495,55 495,75" fill="#475569"/>
+  <rect x="510" y="25" width="200" height="80" rx="10" fill="#1E3A5F"/>
+  <text x="610" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Tool</text>
+  <text x="610" y="75" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="11">executes the action</text>
+  <text x="610" y="92" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">run_query() called</text>
+</svg>
+
+<p>The user clicks <code>/weekly-report</code> (Prompt). The host loads the database schema (Resource). The model runs the queries it needs (Tool). Each primitive does what it does best. Modular, clean, and predictable.</p>
+
+<h2 id="summary">The Cheat Sheet</h2>
+
+<table>
+<thead>
+<tr><th></th><th>Tools</th><th>Resources</th><th>Prompts</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Controlled by</strong></td><td>Model</td><td>Application</td><td>User</td></tr>
+<tr><td><strong>Purpose</strong></td><td>Perform actions</td><td>Provide data</td><td>Structure interaction</td></tr>
+<tr><td><strong>Side effects?</strong></td><td>Yes</td><td>No (read-only)</td><td>No</td></tr>
+<tr><td><strong>Dynamic?</strong></td><td>Yes</td><td>Static / semi-static</td><td>Template with params</td></tr>
+<tr><td><strong>Think of it as</strong></td><td>API endpoint</td><td>Database view</td><td>Slash command</td></tr>
+<tr><td><strong>Method</strong></td><td>tools/call</td><td>resources/read</td><td>prompts/get</td></tr>
+</tbody>
+</table>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>MCP's three primitives exist for a reason. Tools handle actions and dynamic data retrieval. Resources provide static context. Prompts encode reusable interaction patterns.</p>
+
+<p>The single most important design decision when building an MCP server is choosing the right primitive for each piece of functionality. Ask who controls it, ask whether it acts or reads, and the answer becomes obvious.</p>
+
+<p><strong>Tools do. Resources know. Prompts guide.</strong></p>
+
+<hr/>
+
+<h2 id="related">Related</h2>
+
+<ul>
+<li><a href="/loop-engineering-explained">Loop Engineering Explained</a> — how loops are replacing prompting</li>
+<li><a href="/context-engineering-explained">Context Engineering Explained</a> — why what the model sees matters more than what you type</li>
+</ul>
+
+</body>
+</html>
