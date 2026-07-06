@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>Metro Bundler Internals: What REALLY Happens When You Run npx react-native start — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-05-18">
+  <meta property="og:description" content="Every React Native developer runs npx react-native start hundreds of times. But what actually happens under the hood? Here's the full 4-phase pipeline — from config loading to Fast Refresh.">
+</head>
+<body>
+
+<p>Every React Native developer runs <code>npx react-native start</code> hundreds of times. But most have no idea what's actually happening between hitting enter and seeing "Metro waiting on port 8081." Understanding Metro's internals won't just satisfy your curiosity — it'll make you faster at debugging slow builds, broken imports, and mysterious cache issues.</p>
+
+<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:2rem 0;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/MVOwaM3S4xI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+</div>
+
+<h2 id="what-is-metro">What is Metro?</h2>
+
+<p>Metro is React Native's dedicated JavaScript bundler. It's not Webpack, not Vite, not esbuild — it's purpose-built by Meta for the unique constraints of mobile development. Three things make it different:</p>
+
+<svg viewBox="0 0 800 110" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="240" height="90" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="130" y="42" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="22" font-weight="bold">⚡</text>
+  <text x="130" y="65" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="14" font-weight="bold">Speed</text>
+  <text x="130" y="85" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Sub-second incremental builds</text>
+  <rect x="280" y="10" width="240" height="90" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="400" y="42" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="22" font-weight="bold">📦</text>
+  <text x="400" y="65" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="14" font-weight="bold">Modularity</text>
+  <text x="400" y="85" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Pluggable resolver & transformer</text>
+  <rect x="550" y="10" width="240" height="90" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="670" y="42" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="22" font-weight="bold">🔄</text>
+  <text x="670" y="65" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="14" font-weight="bold">Hot Reload</text>
+  <text x="670" y="85" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Fast Refresh without losing state</text>
+</svg>
+
+<h2 id="the-big-picture">The Big Picture: 4 Phases</h2>
+
+<p>When you run <code>npx react-native start</code>, Metro goes through four phases before it starts serving your app. Every startup, every time.</p>
+
+<svg viewBox="0 0 800 100" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="15" width="170" height="65" rx="10" fill="#1E3A5F"/>
+  <text x="95" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Phase 1</text>
+  <text x="95" y="60" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="13" font-weight="bold">Initialize</text>
+  <polygon points="195,47 210,37 210,57" fill="#0D9488"/>
+  <rect x="220" y="15" width="170" height="65" rx="10" fill="#0D9488"/>
+  <text x="305" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Phase 2</text>
+  <text x="305" y="60" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Crawl</text>
+  <polygon points="405,47 420,37 420,57" fill="#0D9488"/>
+  <rect x="430" y="15" width="170" height="65" rx="10" fill="#7C3AED"/>
+  <text x="515" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Phase 3</text>
+  <text x="515" y="60" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Build Graph</text>
+  <polygon points="615,47 630,37 630,57" fill="#0D9488"/>
+  <rect x="640" y="15" width="150" height="65" rx="10" fill="#F59E0B"/>
+  <text x="715" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Phase 4</text>
+  <text x="715" y="60" text-anchor="middle" fill="white" font-family="sans-serif" font-size="13" font-weight="bold">Serve</text>
+</svg>
+
+<h2 id="phase-1">Phase 1: Initialization</h2>
+
+<p>Metro starts by loading your configuration. It reads <code>metro.config.js</code>, resolves the config chain (your overrides merged with defaults), sets up the resolver, and boots the HTTP server. This is where your custom resolver configs, <code>blockList</code> patterns, and <code>extraNodeModules</code> mappings get processed.</p>
+
+<pre><code>// metro.config.js — this is where Metro starts
+module.exports = {
+  resolver: {
+    blockList: [/\.git\/.*/],
+    extraNodeModules: {
+      '@shared': path.resolve(__dirname, '../shared')
+    }
+  },
+  transformer: {
+    babelTransformerPath: require.resolve('react-native-svg-transformer')
+  }
+};</code></pre>
+
+<h2 id="phase-2">Phase 2: File System Crawling</h2>
+
+<p>This is where Metro discovers your project. It crawls your entire file system — every <code>.js</code>, <code>.ts</code>, <code>.tsx</code> file in your project and <code>node_modules</code>. The result is the <strong>haste map</strong> — a lookup table of every file, its path, and a content hash.</p>
+
+<svg viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg" style="max-width:400px;height:auto;margin:1.5rem auto;display:block;">
+  <!-- Root -->
+  <rect x="180" y="10" width="140" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="250" y="33" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">project-root/</text>
+  <!-- Branches -->
+  <line x1="210" y1="45" x2="100" y2="70" stroke="#475569" stroke-width="1.5"/>
+  <line x1="250" y1="45" x2="250" y2="70" stroke="#475569" stroke-width="1.5"/>
+  <line x1="290" y1="45" x2="400" y2="70" stroke="#475569" stroke-width="1.5"/>
+  <!-- Folders -->
+  <rect x="30" y="70" width="140" height="30" rx="4" fill="#0D9488"/>
+  <text x="100" y="90" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">src/</text>
+  <rect x="180" y="70" width="140" height="30" rx="4" fill="#F59E0B"/>
+  <text x="250" y="90" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">node_modules/</text>
+  <rect x="340" y="70" width="140" height="30" rx="4" fill="#7C3AED"/>
+  <text x="410" y="90" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">assets/</text>
+  <!-- Files with hashes -->
+  <line x1="70" y1="100" x2="50" y2="125" stroke="#475569" stroke-width="1"/>
+  <line x1="130" y1="100" x2="150" y2="125" stroke="#475569" stroke-width="1"/>
+  <rect x="5" y="125" width="130" height="28" rx="4" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="70" y="144" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="9">App.tsx → a3f2c1</text>
+  <rect x="95" y="125" width="130" height="28" rx="4" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="160" y="144" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="9">Home.tsx → b7d9e4</text>
+  <!-- Crawl method label -->
+  <rect x="145" y="175" width="210" height="30" rx="6" fill="#CCFBF1"/>
+  <text x="250" y="195" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">Watchman (fast) or Node fs (fallback)</text>
+</svg>
+
+<p>Metro uses <strong>Watchman</strong> (Meta's file-watching service) for fast crawling. If Watchman isn't installed, it falls back to Node's native <code>fs</code> module — significantly slower. This is why installing Watchman is one of the first performance wins for any React Native project.</p>
+
+<h2 id="phase-3">Phase 3: Module Graph & Dependency Resolution</h2>
+
+<p>Now Metro builds the dependency graph. Starting from your entry point (<code>index.js</code>), it traces every <code>import</code> and <code>require</code> statement, recursively building a directed graph of every module your app depends on.</p>
+
+<svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg" style="max-width:480px;height:auto;margin:1.5rem auto;display:block;">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0D9488"/>
+    </marker>
+  </defs>
+  <!-- Entry -->
+  <rect x="220" y="10" width="120" height="35" rx="8" fill="#1E3A5F"/>
+  <text x="280" y="33" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">index.js</text>
+  <!-- Level 1 -->
+  <line x1="250" y1="45" x2="120" y2="75" stroke="#0D9488" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="310" y1="45" x2="440" y2="75" stroke="#0D9488" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="50" y="75" width="130" height="30" rx="6" fill="#0D9488"/>
+  <text x="115" y="95" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10" font-weight="bold">App.tsx</text>
+  <rect x="380" y="75" width="130" height="30" rx="6" fill="#0D9488"/>
+  <text x="445" y="95" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10" font-weight="bold">config.ts</text>
+  <!-- Level 2 -->
+  <line x1="80" y1="105" x2="50" y2="135" stroke="#0D9488" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="150" y1="105" x2="200" y2="135" stroke="#0D9488" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="5" y="135" width="120" height="30" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="65" y="155" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">HomeScreen</text>
+  <rect x="150" y="135" width="120" height="30" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="210" y="155" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Navigation</text>
+  <rect x="300" y="135" width="120" height="30" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="360" y="155" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">react-native</text>
+  <line x1="445" y1="105" x2="360" y2="135" stroke="#0D9488" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- Label -->
+  <text x="300" y="190" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10" font-weight="bold">Every import traced recursively from entry point</text>
+</svg>
+
+<p>This graph is the core data structure Metro operates on. Every future operation — bundling, transformation, hot reload — is a traversal of this graph.</p>
+
+<h2 id="phase-4">Phase 4: Transformation Pipeline</h2>
+
+<p>When your app requests a bundle (by hitting <code>localhost:8081/index.bundle</code>), Metro transforms every module in the graph through a pipeline:</p>
+
+<svg viewBox="0 0 800 90" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="15" width="140" height="55" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="80" y="38" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="12" font-weight="bold">Your .tsx file</text>
+  <text x="80" y="55" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="9">Raw source code</text>
+  <polygon points="165,42 180,32 180,52" fill="#0D9488"/>
+  <rect x="195" y="15" width="140" height="55" rx="8" fill="#F59E0B"/>
+  <text x="265" y="38" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Babel Transform</text>
+  <text x="265" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">JSX → JS, TS → JS</text>
+  <polygon points="350,42 365,32 365,52" fill="#0D9488"/>
+  <rect x="380" y="15" width="140" height="55" rx="8" fill="#7C3AED"/>
+  <text x="450" y="38" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Inline Requires</text>
+  <text x="450" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">Lazy module loading</text>
+  <polygon points="535,42 550,32 550,52" fill="#0D9488"/>
+  <rect x="565" y="15" width="140" height="55" rx="8" fill="#10B981"/>
+  <text x="635" y="38" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Hermes Bytecode</text>
+  <text x="635" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">Compiled for device</text>
+  <polygon points="720,42 735,32 735,52" fill="#0D9488"/>
+  <rect x="745" y="15" width="50" height="55" rx="8" fill="#1E3A5F"/>
+  <text x="770" y="48" text-anchor="middle" fill="white" font-family="sans-serif" font-size="18" font-weight="bold">📱</text>
+</svg>
+
+<p>Your raw <code>.tsx</code> file goes through Babel (JSX and TypeScript to plain JavaScript), inline requires optimization (lazy module loading for faster startup), and finally Hermes bytecode compilation (pre-compiled for the device). The output is a single bundle file that your app loads.</p>
+
+<h2 id="bundle-request">The Bundle Request Flow</h2>
+
+<p>Here's what happens when your React Native app boots and requests its JavaScript bundle:</p>
+
+<svg viewBox="0 0 800 100" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="15" width="130" height="60" rx="8" fill="#1E3A5F"/>
+  <text x="75" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">RN App boots</text>
+  <text x="75" y="58" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="9">requests bundle</text>
+  <polygon points="155,45 170,35 170,55" fill="#0D9488"/>
+  <rect x="185" y="15" width="145" height="60" rx="8" fill="#0D9488"/>
+  <text x="257" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Metro Server</text>
+  <text x="257" y="58" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="9">:8081/index.bundle</text>
+  <polygon points="345,45 360,35 360,55" fill="#0D9488"/>
+  <rect x="375" y="15" width="130" height="60" rx="8" fill="#7C3AED"/>
+  <text x="440" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Walk Graph</text>
+  <text x="440" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">resolve deps</text>
+  <polygon points="520,45 535,35 535,55" fill="#0D9488"/>
+  <rect x="550" y="15" width="110" height="60" rx="8" fill="#F59E0B"/>
+  <text x="605" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Transform</text>
+  <text x="605" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">all modules</text>
+  <polygon points="675,45 690,35 690,55" fill="#0D9488"/>
+  <rect x="705" y="15" width="85" height="60" rx="8" fill="#10B981"/>
+  <text x="747" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Bundle</text>
+  <text x="747" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">→ device</text>
+</svg>
+
+<p>The app boots, requests <code>localhost:8081/index.bundle</code>, Metro walks the dependency graph, transforms every module in the pipeline, serializes them into a single bundle, and sends it back. On subsequent requests, Metro uses cached transforms — only re-transforming files whose content hash has changed.</p>
+
+<h2 id="fast-refresh">Fast Refresh Internals</h2>
+
+<p>This is Metro's killer feature. When you save a file, Metro doesn't rebuild the entire bundle. It sends a <strong>delta</strong> — only the changed modules — to the running app.</p>
+
+<svg viewBox="0 0 800 100" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="15" width="130" height="60" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="75" y="40" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="11" font-weight="bold">You save file</text>
+  <text x="75" y="58" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="9">Cmd+S</text>
+  <polygon points="155,45 170,35 170,55" fill="#0D9488"/>
+  <rect x="185" y="15" width="130" height="60" rx="8" fill="#0D9488"/>
+  <text x="250" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Watchman</text>
+  <text x="250" y="58" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="9">detects change</text>
+  <polygon points="330,45 345,35 345,55" fill="#0D9488"/>
+  <rect x="360" y="15" width="130" height="60" rx="8" fill="#7C3AED"/>
+  <text x="425" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Re-transform</text>
+  <text x="425" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">only changed file</text>
+  <polygon points="505,45 520,35 520,55" fill="#0D9488"/>
+  <rect x="535" y="15" width="115" height="60" rx="8" fill="#F59E0B"/>
+  <text x="592" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Delta sent</text>
+  <text x="592" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">via WebSocket</text>
+  <polygon points="665,45 680,35 680,55" fill="#0D9488"/>
+  <rect x="695" y="15" width="95" height="60" rx="8" fill="#10B981"/>
+  <text x="742" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Hot inject</text>
+  <text x="742" y="58" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">state preserved</text>
+</svg>
+
+<p>The cycle: you save → Watchman detects the file change → Metro re-transforms only the changed module → sends a delta over WebSocket → the React Native runtime hot-injects the updated module — <strong>without losing component state</strong>. This is why you can edit styles and see them update instantly without navigating back to the screen.</p>
+
+<h2 id="power-tips">Power-User Tips</h2>
+
+<ul>
+<li><strong><code>--reset-cache</code></strong> — When things feel wrong and you can't explain why, run <code>npx react-native start --reset-cache</code>. It nukes Metro's transform cache and the haste map, forcing a full rebuild. This fixes most "works on my machine" issues.</li>
+<li><strong>Custom resolvers</strong> — Use <code>resolver.extraNodeModules</code> in <code>metro.config.js</code> for monorepo setups where packages live outside the project root.</li>
+<li><strong><code>blockList</code></strong> — Use regex patterns to exclude directories from Metro's crawl. Essential for monorepos where you don't want Metro crawling sibling packages.</li>
+</ul>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>Metro isn't a black box. It's a pipeline: Initialize → Crawl → Build Graph → Serve. Every performance issue, every weird import error, every cache problem traces back to one of these four phases. Understanding which phase is responsible for your problem is 80% of fixing it.</p>
+
+<p><strong>Now you know what really happens when you hit enter.</strong></p>
+
+<hr/>
+
+<h2 id="related">Related</h2>
+
+<ul>
+<li><a href="/loop-engineering-explained">Loop Engineering Explained</a> — how loops are replacing prompting</li>
+<li><a href="/context-engineering-explained">Context Engineering Explained</a> — why context matters more than prompts</li>
+<li><a href="/nxm-problem-why-ai-integrations-were-broken-before-mcp">The N×M Problem</a> — why AI integrations were broken before MCP</li>
+</ul>
+
+</body>
+</html>
