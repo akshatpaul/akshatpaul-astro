@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>The N×M Problem: Why AI Integrations Were Broken Before MCP — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-06-04">
+  <meta property="og:description" content="Before MCP, connecting N AI models to M tools required N×M custom integrations. Each one hand-built, separately maintained, and ready to break. Here's why a protocol-level fix was the only way out.">
+</head>
+<body>
+
+<p>AI models got smarter every quarter. GPT-4, Claude, Gemini, Mistral — each more capable than the last. But there was a problem nobody was talking about. These models could think, but they couldn't <em>do</em> anything. They had the brain, but not the hands.</p>
+
+<p>To actually interact with the world — read a GitHub repo, send a Slack message, query a database — every AI app had to build custom integrations from scratch. And that's where everything broke.</p>
+
+<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:2rem 0;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/9dZAuFQFtB8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+</div>
+
+<h2 id="the-math">The Math That Breaks Everything</h2>
+
+<p>The problem has a name: the N×M integration problem. N AI models. M external tools. Every combination requires a custom, hand-built connector.</p>
+
+<svg viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Before: N×M -->
+  <rect x="10" y="10" width="370" height="160" rx="12" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+  <text x="195" y="40" text-anchor="middle" fill="#EF4444" font-family="sans-serif" font-size="16" font-weight="bold">BEFORE MCP</text>
+  <text x="195" y="80" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="48" font-weight="bold">5 × 10 = 50</text>
+  <text x="195" y="110" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="13">custom integrations</text>
+  <text x="195" y="135" text-anchor="middle" fill="#EF4444" font-family="sans-serif" font-size="11">Each one hand-built. Each one breaks.</text>
+  <text x="195" y="155" text-anchor="middle" fill="#EF4444" font-family="sans-serif" font-size="11">Add 1 new model → 10 more connectors.</text>
+  <!-- After: N+M -->
+  <rect x="420" y="10" width="370" height="160" rx="12" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1.5"/>
+  <text x="605" y="40" text-anchor="middle" fill="#10B981" font-family="sans-serif" font-size="16" font-weight="bold">AFTER MCP</text>
+  <text x="605" y="80" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="48" font-weight="bold">5 + 10 = 15</text>
+  <text x="605" y="110" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="13">total integrations</text>
+  <text x="605" y="135" text-anchor="middle" fill="#10B981" font-family="sans-serif" font-size="11">Build once per model. Build once per tool.</text>
+  <text x="605" y="155" text-anchor="middle" fill="#10B981" font-family="sans-serif" font-size="11">Add 1 new model → just 1 connector.</text>
+</svg>
+
+<p>5 AI models connecting to 10 tools. Before MCP: 50 custom integrations. After MCP: 15 total. That's not a marginal improvement — that's a fundamentally different scaling curve. And it gets worse. Add one new AI model to the pre-MCP world, and you need 10 more connectors. With MCP, you need one.</p>
+
+<h2 id="the-spaghetti">The Pre-MCP Spaghetti</h2>
+
+<p>Here's what the integration landscape actually looked like. Every AI app building custom, point-to-point connections to every service it needed.</p>
+
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Left: AI Models -->
+  <rect x="10" y="10" width="130" height="38" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="35" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Claude</text>
+  <rect x="10" y="55" width="130" height="38" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="80" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">GPT-4</text>
+  <rect x="10" y="100" width="130" height="38" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="125" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Gemini</text>
+  <rect x="10" y="145" width="130" height="38" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="170" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Mistral</text>
+  <!-- Right: Tools -->
+  <rect x="660" y="10" width="130" height="38" rx="6" fill="#475569"/>
+  <text x="725" y="35" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">GitHub</text>
+  <rect x="660" y="55" width="130" height="38" rx="6" fill="#475569"/>
+  <text x="725" y="80" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Slack</text>
+  <rect x="660" y="100" width="130" height="38" rx="6" fill="#475569"/>
+  <text x="725" y="125" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">PostgreSQL</text>
+  <rect x="660" y="145" width="130" height="38" rx="6" fill="#475569"/>
+  <text x="725" y="170" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Google Drive</text>
+  <!-- Spaghetti lines -->
+  <line x1="140" y1="29" x2="660" y2="29" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="29" x2="660" y2="74" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="29" x2="660" y2="119" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="29" x2="660" y2="164" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="74" x2="660" y2="29" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="74" x2="660" y2="74" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="74" x2="660" y2="119" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="74" x2="660" y2="164" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="119" x2="660" y2="29" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="119" x2="660" y2="74" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="119" x2="660" y2="119" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="119" x2="660" y2="164" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="164" x2="660" y2="29" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="164" x2="660" y2="74" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="164" x2="660" y2="119" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <line x1="140" y1="164" x2="660" y2="164" stroke="#EF4444" stroke-width="1" opacity="0.5"/>
+  <text x="400" y="210" text-anchor="middle" fill="#EF4444" font-family="sans-serif" font-size="12" font-weight="bold">4 × 4 = 16 custom integrations. None reusable.</text>
+</svg>
+
+<p>Every line is a separate integration with its own authentication, schema mapping, error handling, and maintenance burden. Now imagine this at enterprise scale — 20 AI apps, 50 internal services. That's 1,000 integrations. No team can maintain that.</p>
+
+<h2 id="hidden-tax">The Hidden Engineering Tax</h2>
+
+<p>The N×M number only tells part of the story. Every single integration comes with a hidden tax that compounds over time:</p>
+
+<svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="185" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="102" y="40" text-anchor="middle" fill="#EF4444" font-family="sans-serif" font-size="13" font-weight="bold">Auth Hell</text>
+  <text x="102" y="62" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Every API has its own</text>
+  <text x="102" y="77" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">OAuth flow, tokens,</text>
+  <text x="102" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">refresh logic, scopes</text>
+  <rect x="210" y="10" width="185" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="302" y="40" text-anchor="middle" fill="#F59E0B" font-family="sans-serif" font-size="13" font-weight="bold">Schema Drift</text>
+  <text x="302" y="62" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">API changes break your</text>
+  <text x="302" y="77" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">connector silently.</text>
+  <text x="302" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">No shared schema.</text>
+  <rect x="410" y="10" width="185" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="502" y="40" text-anchor="middle" fill="#7C3AED" font-family="sans-serif" font-size="13" font-weight="bold">Glue Code</text>
+  <text x="502" y="62" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">80% of "AI integration"</text>
+  <text x="502" y="77" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">work is plumbing,</text>
+  <text x="502" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">not intelligence.</text>
+  <rect x="610" y="10" width="180" height="110" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="700" y="40" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="13" font-weight="bold">Version Rot</text>
+  <text x="700" y="62" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">50 connectors means</text>
+  <text x="700" y="77" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">50 things that can</text>
+  <text x="700" y="92" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">break independently.</text>
+</svg>
+
+<p>Auth hell — every API has its own OAuth flow. Schema drift — API changes break connectors silently. Glue code — 80% of "AI integration" work is plumbing, not intelligence. Version rot — 50 connectors means 50 things that can break independently. This is why AI adoption was stuck — not because the models weren't good enough, but because the integration layer was a nightmare.</p>
+
+<h2 id="usb-c-moment">The USB-C Moment</h2>
+
+<p>Before USB-C, you needed a different cable for every device. Your phone, your camera, your monitor, your external drive — all different plugs. It was a mess that everyone just accepted.</p>
+
+<p>MCP does the same thing for AI. Before MCP, you needed a different integration for every AI-to-tool connection. After MCP, you need one protocol. One standard. One plug.</p>
+
+<p>Build one MCP server for GitHub — and Claude, Cursor, VS Code Copilot, Windsurf, and every future MCP-compatible app can use it. Build one MCP client for your AI app — and it can talk to every MCP server that exists.</p>
+
+<h2 id="hub-and-spoke">MCP: The Hub-and-Spoke Architecture</h2>
+
+<svg viewBox="0 0 800 250" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Left: AI Apps -->
+  <rect x="10" y="20" width="130" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="43" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Claude</text>
+  <rect x="10" y="65" width="130" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="88" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">GPT-4</text>
+  <rect x="10" y="110" width="130" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="133" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Gemini</text>
+  <rect x="10" y="155" width="130" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="75" y="178" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Cursor</text>
+  <!-- MCP Protocol Layer -->
+  <rect x="280" y="10" width="240" height="210" rx="14" fill="#0D9488"/>
+  <text x="400" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="18" font-weight="bold">MCP</text>
+  <text x="400" y="75" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="12">Universal Protocol</text>
+  <text x="400" y="110" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="11">JSON-RPC 2.0</text>
+  <text x="400" y="130" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="11">stdio / HTTP+SSE</text>
+  <text x="400" y="150" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="11">Tools · Resources · Prompts</text>
+  <rect x="310" y="175" width="180" height="30" rx="6" fill="#0F766E"/>
+  <text x="400" y="195" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Build once → works everywhere</text>
+  <!-- Right: Services -->
+  <rect x="660" y="20" width="130" height="35" rx="6" fill="#475569"/>
+  <text x="725" y="43" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">GitHub</text>
+  <rect x="660" y="65" width="130" height="35" rx="6" fill="#475569"/>
+  <text x="725" y="88" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Slack</text>
+  <rect x="660" y="110" width="130" height="35" rx="6" fill="#475569"/>
+  <text x="725" y="133" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">PostgreSQL</text>
+  <rect x="660" y="155" width="130" height="35" rx="6" fill="#475569"/>
+  <text x="725" y="178" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Google Drive</text>
+  <!-- Clean lines: Left to MCP -->
+  <line x1="140" y1="37" x2="280" y2="80" stroke="#0D9488" stroke-width="2"/>
+  <line x1="140" y1="82" x2="280" y2="95" stroke="#0D9488" stroke-width="2"/>
+  <line x1="140" y1="127" x2="280" y2="115" stroke="#0D9488" stroke-width="2"/>
+  <line x1="140" y1="172" x2="280" y2="135" stroke="#0D9488" stroke-width="2"/>
+  <!-- Clean lines: MCP to Right -->
+  <line x1="520" y1="80" x2="660" y2="37" stroke="#0D9488" stroke-width="2"/>
+  <line x1="520" y1="95" x2="660" y2="82" stroke="#0D9488" stroke-width="2"/>
+  <line x1="520" y1="115" x2="660" y2="127" stroke="#0D9488" stroke-width="2"/>
+  <line x1="520" y1="135" x2="660" y2="172" stroke="#0D9488" stroke-width="2"/>
+  <!-- Label -->
+  <text x="400" y="245" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="12" font-weight="bold">4 + 4 = 8 integrations. All reusable.</text>
+</svg>
+
+<p>Clean. Simple. Every AI app speaks MCP on one side, every tool speaks MCP on the other. The spaghetti is gone. The protocol layer handles everything — discovery, capability negotiation, data formatting, transport.</p>
+
+<h2 id="the-protocol-won">The Protocol Won</h2>
+
+<p>MCP isn't a theoretical improvement. It shipped, it scaled, and the industry adopted it.</p>
+
+<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="185" height="100" rx="12" fill="#1E3A5F"/>
+  <text x="102" y="45" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="34" font-weight="bold">97M</text>
+  <text x="102" y="68" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">SDK Downloads</text>
+  <text x="102" y="88" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">monthly, Python + TS</text>
+  <rect x="210" y="10" width="185" height="100" rx="12" fill="#1E3A5F"/>
+  <text x="302" y="45" text-anchor="middle" fill="#F59E0B" font-family="sans-serif" font-size="34" font-weight="bold">10K+</text>
+  <text x="302" y="68" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">MCP Servers</text>
+  <text x="302" y="88" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">active, public</text>
+  <rect x="410" y="10" width="185" height="100" rx="12" fill="#1E3A5F"/>
+  <text x="502" y="45" text-anchor="middle" fill="#10B981" font-family="sans-serif" font-size="34" font-weight="bold">78%</text>
+  <text x="502" y="68" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Enterprise Teams</text>
+  <text x="502" y="88" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">using MCP in production</text>
+  <rect x="610" y="10" width="180" height="100" rx="12" fill="#1E3A5F"/>
+  <text x="700" y="45" text-anchor="middle" fill="#7C3AED" font-family="sans-serif" font-size="22" font-weight="bold">Linux</text>
+  <text x="700" y="65" text-anchor="middle" fill="#7C3AED" font-family="sans-serif" font-size="22" font-weight="bold">Foundation</text>
+  <text x="700" y="88" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">vendor-neutral governance</text>
+</svg>
+
+<p>97 million monthly SDK downloads. Over 10,000 active public MCP servers. 78% of enterprise AI teams using MCP in production. And in December 2025, Anthropic donated MCP to the Linux Foundation's Agentic AI Foundation — co-founded with Block and OpenAI, backed by Google, Microsoft, AWS, and Cloudflare. This isn't one company's protocol anymore. It's the industry standard.</p>
+
+<h2 id="who-benefits">Who Benefits</h2>
+
+<p>MCP decouples the teams that build AI from the teams that manage data and services:</p>
+
+<ul>
+<li><strong>Data teams</strong> build robust, secure MCP servers for their internal APIs — without worrying about which AI model will use them.</li>
+<li><strong>AI teams</strong> swap models without rebuilding data integrations. When the next frontier model drops, your MCP servers still work.</li>
+<li><strong>Everyone</strong> stops writing glue code and starts building actual features.</li>
+</ul>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>The N×M problem was never about the models being bad. The models were brilliant. The problem was the plumbing — every connection hand-built, every integration fragile, every team drowning in glue code instead of building features.</p>
+
+<p>MCP didn't make AI smarter. It made AI <em>connected</em>. And that turned out to be the thing that mattered most.</p>
+
+<p><strong>N×M was the problem. N+M is the answer.</strong></p>
+
+<hr/>
+
+<h2 id="related">Related</h2>
+
+<ul>
+<li><a href="/how-mcp-actually-works">How MCP Actually Works</a> — the 3-layer architecture under the hood</li>
+<li><a href="/mcp-tools-vs-resources-vs-prompts">MCP Tools vs Resources vs Prompts</a> — the three primitives every server exposes</li>
+<li><a href="/loop-engineering-explained">Loop Engineering Explained</a> — how loops are replacing prompting</li>
+<li><a href="/context-engineering-explained">Context Engineering Explained</a> — why what the model sees matters more than what you type</li>
+</ul>
+
+</body>
+</html>
