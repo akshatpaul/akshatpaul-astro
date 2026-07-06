@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>How MCP Actually Works: How AI Agents Talk to GitHub, Slack & the World — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-06-11">
+  <meta property="og:description" content="Every AI agent you use — Claude Desktop, Cursor, VS Code Copilot — runs on the same 3-layer architecture. Here's how MCP actually works under the hood.">
+</head>
+<body>
+
+<p>Every AI agent you use — Claude Desktop, Cursor, Windsurf, VS Code Copilot — runs on the same 3-layer architecture. Most developers don't know it exists. They just see an AI that can somehow read their GitHub, send Slack messages, or query their database.</p>
+
+<p>Under the hood, it's all MCP — the Model Context Protocol. And once you understand its architecture, everything about how AI agents work clicks into place.</p>
+
+<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:2rem 0;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ChcWRxfv7DU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+</div>
+
+<h2 id="the-problem">The N×M Problem</h2>
+
+<p>Before MCP, every AI app had to build a custom integration for every external service. 5 AI apps connecting to 5 services meant 25 separate integrations. Each one fragile, proprietary, and maintained in isolation.</p>
+
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Left: AI Apps -->
+  <rect x="10" y="15" width="120" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="70" y="38" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Claude Desktop</text>
+  <rect x="10" y="60" width="120" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="70" y="83" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Cursor</text>
+  <rect x="10" y="105" width="120" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="70" y="128" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">VS Code Copilot</text>
+  <rect x="10" y="150" width="120" height="35" rx="6" fill="#1E3A5F"/>
+  <text x="70" y="173" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Windsurf</text>
+  <!-- Right: Services -->
+  <rect x="670" y="15" width="120" height="35" rx="6" fill="#475569"/>
+  <text x="730" y="38" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">GitHub</text>
+  <rect x="670" y="60" width="120" height="35" rx="6" fill="#475569"/>
+  <text x="730" y="83" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Slack</text>
+  <rect x="670" y="105" width="120" height="35" rx="6" fill="#475569"/>
+  <text x="730" y="128" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">PostgreSQL</text>
+  <rect x="670" y="150" width="120" height="35" rx="6" fill="#475569"/>
+  <text x="730" y="173" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Google Drive</text>
+  <!-- Messy lines (N×M) -->
+  <line x1="130" y1="32" x2="670" y2="32" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="32" x2="670" y2="77" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="32" x2="670" y2="122" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="32" x2="670" y2="167" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="77" x2="670" y2="32" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="77" x2="670" y2="77" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="77" x2="670" y2="122" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="77" x2="670" y2="167" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="122" x2="670" y2="32" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="122" x2="670" y2="77" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="122" x2="670" y2="122" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="122" x2="670" y2="167" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="167" x2="670" y2="32" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="167" x2="670" y2="77" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="167" x2="670" y2="122" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <line x1="130" y1="167" x2="670" y2="167" stroke="#EF4444" stroke-width="1" opacity="0.4"/>
+  <!-- Label -->
+  <text x="400" y="195" text-anchor="middle" fill="#EF4444" font-family="sans-serif" font-size="12" font-weight="bold">4 × 4 = 16 custom integrations. None reusable.</text>
+</svg>
+
+<p>MCP solved this with a universal protocol. Build one MCP server for GitHub, and every MCP-compatible AI app can connect to it. Instead of N×M integrations, you get N+M. The same idea as USB — one standard plug, everything works.</p>
+
+<h2 id="three-layer-architecture">The 3-Layer Architecture</h2>
+
+<p>Every MCP system has exactly three layers: the Host, the Client, and the Server. Understanding what each one does — and what it doesn't do — is the key to understanding how AI agents actually talk to the outside world.</p>
+
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Host -->
+  <rect x="10" y="10" width="250" height="200" rx="12" fill="#0D9488"/>
+  <text x="135" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="18" font-weight="bold">HOST</text>
+  <text x="135" y="60" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="11">The app you interact with</text>
+  <rect x="25" y="75" width="220" height="25" rx="4" fill="#0F766E"/>
+  <text x="135" y="93" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">Claude Desktop / Cursor / VS Code</text>
+  <rect x="25" y="108" width="220" height="25" rx="4" fill="#0F766E"/>
+  <text x="135" y="126" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">Manages UI, session, LLM calls</text>
+  <rect x="25" y="141" width="220" height="25" rx="4" fill="#0F766E"/>
+  <text x="135" y="159" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">Orchestrates multiple Clients</text>
+  <rect x="25" y="174" width="220" height="25" rx="4" fill="#0F766E"/>
+  <text x="135" y="192" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">Security & consent enforcement</text>
+  <!-- Arrow -->
+  <polygon points="275,110 295,100 295,120" fill="#F59E0B"/>
+  <!-- Client -->
+  <rect x="310" y="10" width="180" height="200" rx="12" fill="#F59E0B"/>
+  <text x="400" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="18" font-weight="bold">CLIENT</text>
+  <text x="400" y="60" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11">Lives INSIDE the Host</text>
+  <rect x="325" y="75" width="150" height="25" rx="4" fill="#D97706"/>
+  <text x="400" y="93" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">1 Client per Server</text>
+  <rect x="325" y="108" width="150" height="25" rx="4" fill="#D97706"/>
+  <text x="400" y="126" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">Maintains connection</text>
+  <rect x="325" y="141" width="150" height="25" rx="4" fill="#D97706"/>
+  <text x="400" y="159" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">Protocol translation</text>
+  <rect x="325" y="174" width="150" height="25" rx="4" fill="#D97706"/>
+  <text x="400" y="192" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">JSON-RPC messaging</text>
+  <!-- Arrow -->
+  <polygon points="505,110 525,100 525,120" fill="#10B981"/>
+  <!-- Server -->
+  <rect x="540" y="10" width="250" height="200" rx="12" fill="#10B981"/>
+  <text x="665" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="18" font-weight="bold">SERVER</text>
+  <text x="665" y="60" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11">Connects to external services</text>
+  <rect x="555" y="75" width="220" height="25" rx="4" fill="#059669"/>
+  <text x="665" y="93" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">Exposes: Tools, Resources, Prompts</text>
+  <rect x="555" y="108" width="220" height="25" rx="4" fill="#059669"/>
+  <text x="665" y="126" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">Talks to GitHub, Slack, DBs</text>
+  <rect x="555" y="141" width="220" height="25" rx="4" fill="#059669"/>
+  <text x="665" y="159" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">Lightweight & stateless</text>
+  <rect x="555" y="174" width="220" height="25" rx="4" fill="#059669"/>
+  <text x="665" y="192" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">One Server = one service</text>
+</svg>
+
+<h2 id="the-host">Layer 1: The Host</h2>
+
+<p>The Host is the application you actually interact with — Claude Desktop, Cursor, VS Code with Copilot. It's responsible for the UI, managing your session, making LLM calls, and orchestrating multiple Clients. When you type a message and hit enter, the Host is what receives it.</p>
+
+<p>Crucially, the Host is also the security layer. It decides which tools the AI can use and enforces user consent before any action with side effects.</p>
+
+<h2 id="the-client">Layer 2: The Client (The Misunderstood One)</h2>
+
+<p>This is where most people get confused. The Client is <strong>not</strong> a separate application. It lives inside the Host. There's one Client per Server connection. If your Claude Desktop is connected to both a GitHub server and a Slack server, there are two Clients running inside that Host.</p>
+
+<p>The Client's job is protocol translation — it takes what the LLM wants to do and translates it into JSON-RPC messages that the Server understands. It maintains the connection, handles the handshake, and routes messages back and forth.</p>
+
+<h2 id="the-server">Layer 3: The Server</h2>
+
+<p>The Server is what actually connects to the outside world. One Server per external service — a GitHub server, a Slack server, a PostgreSQL server. Each one exposes three types of capabilities: Tools (actions the model can invoke), Resources (read-only data for context), and Prompts (reusable templates the user selects).</p>
+
+<p>Servers are designed to be lightweight and mostly stateless — a thin interface layer over the external system, not a stateful application.</p>
+
+<h2 id="json-rpc">JSON-RPC 2.0: The Wire Protocol</h2>
+
+<p>Every message between Client and Server uses JSON-RPC 2.0. It's not REST, not GraphQL — it's a simple request-response protocol where every message has a method name, parameters, and an ID.</p>
+
+<pre><code>// Client → Server: "What tools do you have?"
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list"
+}
+
+// Server → Client: "Here's what I can do"
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [{
+      "name": "create_issue",
+      "description": "Create a GitHub issue",
+      "inputSchema": { ... }
+    }]
+  }
+}</code></pre>
+
+<p>The discovery phase happens at session start — the Client asks the Server what it can do, and the Server lists its Tools, Resources, and Prompts. Then the LLM can reason about which ones to use during a conversation.</p>
+
+<h2 id="transport">Transport: stdio vs HTTP+SSE</h2>
+
+<p>MCP supports two main transport methods:</p>
+
+<svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- stdio -->
+  <rect x="10" y="10" width="370" height="120" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="195" y="40" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="16" font-weight="bold">stdio</text>
+  <text x="195" y="65" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="12">Server runs as a local subprocess</text>
+  <text x="195" y="85" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="12">Communication over stdin/stdout</text>
+  <rect x="95" y="100" width="200" height="22" rx="4" fill="#CCFBF1"/>
+  <text x="195" y="115" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">Best for: local dev tools, file access</text>
+  <!-- HTTP+SSE -->
+  <rect x="420" y="10" width="370" height="120" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="605" y="40" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="16" font-weight="bold">HTTP + SSE</text>
+  <text x="605" y="65" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="12">Server runs as a remote service</text>
+  <text x="605" y="85" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="12">HTTP POST for requests, SSE for streaming</text>
+  <rect x="505" y="100" width="200" height="22" rx="4" fill="#CCFBF1"/>
+  <text x="605" y="115" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="10" font-weight="bold">Best for: cloud APIs, shared services</text>
+</svg>
+
+<p><strong>stdio</strong> means the Host spawns the Server as a local subprocess and communicates over standard input/output. Fast, simple, no network involved. Use this for local tools, file system access, and development.</p>
+
+<p><strong>HTTP+SSE</strong> means the Server runs as a remote service. The Client sends requests via HTTP POST and receives streaming responses via Server-Sent Events. Use this for cloud APIs, shared team services, and production deployments.</p>
+
+<h2 id="end-to-end">The Full End-to-End Flow</h2>
+
+<p>Here's what actually happens when you ask Claude Desktop "create a GitHub issue for this bug":</p>
+
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- Step boxes -->
+  <rect x="10" y="10" width="170" height="55" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="95" y="32" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="11" font-weight="bold">1. You type message</text>
+  <text x="95" y="50" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="9">Host receives it</text>
+  <polygon points="190,37 205,27 205,47" fill="#0D9488"/>
+  <rect x="215" y="10" width="170" height="55" rx="8" fill="#0D9488"/>
+  <text x="300" y="32" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">2. Host calls LLM</text>
+  <text x="300" y="50" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="9">with available tools list</text>
+  <polygon points="395,37 410,27 410,47" fill="#0D9488"/>
+  <rect x="420" y="10" width="170" height="55" rx="8" fill="#1E3A5F"/>
+  <text x="505" y="32" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">3. LLM decides</text>
+  <text x="505" y="50" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="9">use create_issue tool</text>
+  <polygon points="600,37 615,27 615,47" fill="#0D9488"/>
+  <rect x="625" y="10" width="165" height="55" rx="8" fill="#F59E0B"/>
+  <text x="707" y="32" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">4. Client routes</text>
+  <text x="707" y="50" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">JSON-RPC to Server</text>
+  <!-- Second row -->
+  <rect x="10" y="90" width="170" height="55" rx="8" fill="#10B981"/>
+  <text x="95" y="112" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">5. Server calls</text>
+  <text x="95" y="130" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">GitHub API</text>
+  <polygon points="190,117 205,107 205,127" fill="#0D9488"/>
+  <rect x="215" y="90" width="170" height="55" rx="8" fill="#10B981"/>
+  <text x="300" y="112" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">6. GitHub responds</text>
+  <text x="300" y="130" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">issue #42 created</text>
+  <polygon points="395,117 410,107 410,127" fill="#0D9488"/>
+  <rect x="420" y="90" width="170" height="55" rx="8" fill="#F59E0B"/>
+  <text x="505" y="112" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">7. Client returns</text>
+  <text x="505" y="130" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">result to Host</text>
+  <polygon points="600,117 615,107 615,127" fill="#0D9488"/>
+  <rect x="625" y="90" width="165" height="55" rx="8" fill="#0D9488"/>
+  <text x="707" y="112" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">8. LLM responds</text>
+  <text x="707" y="130" text-anchor="middle" fill="white" font-family="sans-serif" font-size="9">"Created issue #42"</text>
+  <!-- Connection arrows between rows -->
+  <path d="M790,65 Q800,75 790,90" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+</svg>
+
+<p>Eight steps. The user sees one message and one response. Everything in between — the LLM reasoning, the Client routing, the Server calling GitHub, the response flowing back — is invisible. That's the entire point of MCP.</p>
+
+<h2 id="real-config">Real World: Claude Desktop + GitHub</h2>
+
+<p>Here's what the actual configuration looks like to connect Claude Desktop to a GitHub MCP server:</p>
+
+<pre><code>// claude_desktop_config.json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_xxx"
+      }
+    }
+  }
+}</code></pre>
+
+<p>That's it. One config block. The Host (Claude Desktop) reads this, spawns the server as a subprocess via stdio, the Client inside Claude Desktop connects to it, discovers its tools during the handshake, and now the LLM can create issues, read repos, manage PRs — all through a standard protocol.</p>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>MCP's 3-layer architecture — Host, Client, Server — is the plumbing that makes AI agents actually useful. Without it, every integration is a one-off hack. With it, you build once and every AI app can connect.</p>
+
+<p>The Host is what you see. The Client is the translator you don't see. The Server is the bridge to the outside world.</p>
+
+<p><strong>That's how AI talks to GitHub, Slack, and everything else.</strong></p>
+
+<hr/>
+
+<h2 id="related">Related</h2>
+
+<ul>
+<li><a href="/mcp-tools-vs-resources-vs-prompts">MCP Tools vs Resources vs Prompts</a> — understanding the three primitives servers expose</li>
+<li><a href="/loop-engineering-explained">Loop Engineering Explained</a> — how loops are replacing prompting</li>
+<li><a href="/context-engineering-explained">Context Engineering Explained</a> — why what the model sees matters more than what you type</li>
+</ul>
+
+</body>
+</html>

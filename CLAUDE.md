@@ -87,12 +87,13 @@ Ordered newest → oldest. This order drives the prev/next navigation on post pa
 1. `mcp-tools-vs-resources-vs-prompts` — MCP Tools vs Resources vs Prompts: What's the Actual Difference?
 2. `context-engineering-explained` — Context Engineering Explained: Why Prompt Engineering Is No Longer Enough
 3. `loop-engineering-explained` — Loop Engineering Explained: From Prompt Engineering to Loop Engineering
-4. `hermes-v1-vs-v8-react-native` — Hermes V1 vs V8: The JavaScript Engine Deep Dive for React Native 0.84
-5. `react-native-new-architecture-2026` — React Native New Architecture 2026
-6. `building-a-react-native-tv-application-with-react-native-tvos` — Building a React Native TV Application
-7. `introduction-to-aws-amplify` — Introduction to AWS Amplify
-8. `programming-made-easy-with-ruby-enumerables` — Programming made easy with Ruby Enumerables
-9. `how-to-start-building-mobile-apps-in-10-mins-with-react-native` — How to start building Mobile apps in 10 mins?
+4. `how-mcp-actually-works` — How MCP Actually Works: How AI Agents Talk to GitHub, Slack & the World
+5. `hermes-v1-vs-v8-react-native` — Hermes V1 vs V8: The JavaScript Engine Deep Dive for React Native 0.84
+6. `react-native-new-architecture-2026` — React Native New Architecture 2026
+7. `building-a-react-native-tv-application-with-react-native-tvos` — Building a React Native TV Application
+8. `introduction-to-aws-amplify` — Introduction to AWS Amplify
+9. `programming-made-easy-with-ruby-enumerables` — Programming made easy with Ruby Enumerables
+10. `how-to-start-building-mobile-apps-in-10-mins-with-react-native` — How to start building Mobile apps in 10 mins?
 
 ---
 
