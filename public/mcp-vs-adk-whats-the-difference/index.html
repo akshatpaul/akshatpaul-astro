@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>MCP vs ADK: What's the Difference? | AI Agent Frameworks Explained — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-05-20">
+  <meta property="og:description" content="MCP and ADK are the two most talked-about terms in AI agent development — but they solve completely different problems. Here's the actual difference and when to use each.">
+</head>
+<body>
+
+<p>Two acronyms keep showing up in every AI agent conversation: MCP and ADK. And almost everyone confuses them.</p>
+
+<p>Some think they're competitors. Some think you pick one or the other. Both of those assumptions are wrong. MCP and ADK solve different problems at different layers — and understanding that distinction is the key to building agents that actually work.</p>
+
+<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:2rem 0;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Geq5BJ7lHB0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+</div>
+
+<h2 id="agent-revolution">The AI Agent Revolution</h2>
+
+<p>AI agents aren't experimental anymore. They're shipping in production — writing code, triaging support tickets, managing deployments, coordinating workflows. But building them requires two things: a way for agents to <strong>connect to tools</strong> and a way to <strong>orchestrate agent behavior</strong>. That's where MCP and ADK come in — each solving one of those two problems.</p>
+
+<h2 id="what-is-mcp">What is MCP?</h2>
+
+<svg viewBox="0 0 800 160" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="780" height="140" rx="12" fill="#0D9488"/>
+  <text x="400" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="22" font-weight="bold">Model Context Protocol (MCP)</text>
+  <line x1="250" y1="58" x2="550" y2="58" stroke="#CCFBF1" stroke-width="1.5"/>
+  <text x="400" y="82" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="14">A protocol for connecting AI to external tools</text>
+  <rect x="40" y="100" width="150" height="35" rx="6" fill="#0F766E"/>
+  <text x="115" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">By Anthropic</text>
+  <rect x="210" y="100" width="150" height="35" rx="6" fill="#0F766E"/>
+  <text x="285" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Nov 2024</text>
+  <rect x="380" y="100" width="150" height="35" rx="6" fill="#0F766E"/>
+  <text x="455" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Open Standard</text>
+  <rect x="550" y="100" width="210" height="35" rx="6" fill="#0F766E"/>
+  <text x="655" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Linux Foundation governed</text>
+</svg>
+
+<p>MCP — Model Context Protocol — is an <strong>open standard</strong> created by Anthropic in November 2024. It defines how any AI application connects to any external tool or data source through a universal interface. Think of it as USB-C for AI: one protocol, everything connects.</p>
+
+<p>MCP solved the N×M integration problem. Instead of building 50 custom connectors for 5 AI models × 10 tools, you build 15 total (5 + 10). Each side implements MCP once.</p>
+
+<h2 id="how-mcp-works">How MCP Works</h2>
+
+<svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="20" width="160" height="80" rx="10" fill="#0D9488"/>
+  <text x="90" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">HOST</text>
+  <text x="90" y="75" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="10">Claude / Cursor</text>
+  <polygon points="185,60 200,50 200,70" fill="#0D9488"/>
+  <rect x="215" y="20" width="160" height="80" rx="10" fill="#F59E0B"/>
+  <text x="295" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">CLIENT</text>
+  <text x="295" y="75" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">Inside the Host</text>
+  <polygon points="390,60 405,50 405,70" fill="#F59E0B"/>
+  <rect x="420" y="20" width="160" height="80" rx="10" fill="#10B981"/>
+  <text x="500" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">SERVER</text>
+  <text x="500" y="75" text-anchor="middle" fill="white" font-family="sans-serif" font-size="10">Exposes capabilities</text>
+  <polygon points="595,60 610,50 610,70" fill="#10B981"/>
+  <rect x="625" y="20" width="165" height="80" rx="10" fill="#475569"/>
+  <text x="707" y="55" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">TOOLS</text>
+  <text x="707" y="75" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="10">GitHub / Slack / DB</text>
+</svg>
+
+<p>MCP uses a 3-layer architecture: the Host (the app you use), the Client (lives inside the Host, one per connection), and the Server (connects to external services). Communication happens over JSON-RPC 2.0, with two transport options: stdio for local servers and HTTP+SSE for remote ones.</p>
+
+<p>Every MCP Server exposes three types of capabilities: <strong>Tools</strong> (actions the AI can invoke), <strong>Resources</strong> (read-only data for context), and <strong>Prompts</strong> (reusable templates the user selects).</p>
+
+<h2 id="what-is-adk">What is ADK?</h2>
+
+<svg viewBox="0 0 800 160" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="780" height="140" rx="12" fill="#1E3A5F"/>
+  <text x="400" y="45" text-anchor="middle" fill="white" font-family="sans-serif" font-size="22" font-weight="bold">Agent Development Kit (ADK)</text>
+  <line x1="250" y1="58" x2="550" y2="58" stroke="#94A3B8" stroke-width="1.5"/>
+  <text x="400" y="82" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="14">A framework for building and orchestrating AI agents</text>
+  <rect x="40" y="100" width="150" height="35" rx="6" fill="#152D4A"/>
+  <text x="115" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">By Google</text>
+  <rect x="210" y="100" width="150" height="35" rx="6" fill="#152D4A"/>
+  <text x="285" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">April 2025</text>
+  <rect x="380" y="100" width="150" height="35" rx="6" fill="#152D4A"/>
+  <text x="455" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Open Source</text>
+  <rect x="550" y="100" width="210" height="35" rx="6" fill="#152D4A"/>
+  <text x="655" y="123" text-anchor="middle" fill="white" font-family="sans-serif" font-size="11" font-weight="bold">Multi-language SDK</text>
+</svg>
+
+<p>ADK — Agent Development Kit — is Google's <strong>framework</strong> for building, debugging, and deploying AI agents. Released in April 2025, it provides the scaffolding to create agents that can think, plan, use tools, and coordinate with other agents.</p>
+
+<p>While MCP answers "how does AI connect to tools?", ADK answers "how do I build an agent that uses those tools intelligently?" It ships with session management, a browser-based debug UI, code execution support, and deployment targets including Cloud Run and Vertex AI.</p>
+
+<h2 id="how-adk-works">How ADK Works</h2>
+
+<svg viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg" style="max-width:480px;height:auto;margin:1.5rem auto;display:block;">
+  <!-- Root Agent -->
+  <rect x="200" y="10" width="200" height="50" rx="10" fill="#1E3A5F"/>
+  <text x="300" y="42" text-anchor="middle" fill="white" font-family="sans-serif" font-size="14" font-weight="bold">Root Agent</text>
+  <!-- Lines down -->
+  <line x1="250" y1="60" x2="120" y2="100" stroke="#475569" stroke-width="2"/>
+  <line x1="300" y1="60" x2="300" y2="100" stroke="#475569" stroke-width="2"/>
+  <line x1="350" y1="60" x2="480" y2="100" stroke="#475569" stroke-width="2"/>
+  <!-- Sub agents -->
+  <rect x="40" y="100" width="160" height="45" rx="8" fill="#0D9488"/>
+  <text x="120" y="128" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Research Agent</text>
+  <rect x="220" y="100" width="160" height="45" rx="8" fill="#F59E0B"/>
+  <text x="300" y="128" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Code Agent</text>
+  <rect x="400" y="100" width="160" height="45" rx="8" fill="#7C3AED"/>
+  <text x="480" y="128" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12" font-weight="bold">Deploy Agent</text>
+  <!-- Sub-sub agents -->
+  <line x1="80" y1="145" x2="80" y2="175" stroke="#475569" stroke-width="1.5"/>
+  <line x1="160" y1="145" x2="160" y2="175" stroke="#475569" stroke-width="1.5"/>
+  <rect x="20" y="175" width="120" height="35" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="80" y="197" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Web Search</text>
+  <rect x="100" y="175" width="120" height="35" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="160" y="197" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10">Doc Reader</text>
+  <!-- Label -->
+  <text x="300" y="240" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11" font-weight="bold">Hierarchical agent tree — agents delegate to sub-agents</text>
+</svg>
+
+<p>ADK uses a hierarchical agent tree. A root agent delegates tasks to specialized sub-agents, each with their own tools and context. Sub-agents can have their own sub-agents. The root orchestrates, the leaves execute. This pattern enables complex multi-step workflows where each agent does what it's best at.</p>
+
+<h2 id="head-to-head">MCP vs ADK: Head to Head</h2>
+
+<table>
+<thead>
+<tr><th></th><th>MCP</th><th>ADK</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>What is it?</strong></td><td>Protocol (standard)</td><td>Framework (SDK)</td></tr>
+<tr><td><strong>Created by</strong></td><td>Anthropic</td><td>Google</td></tr>
+<tr><td><strong>Solves</strong></td><td>How AI connects to tools</td><td>How to build & orchestrate agents</td></tr>
+<tr><td><strong>Think of it as</strong></td><td>USB-C port</td><td>The laptop with the port</td></tr>
+<tr><td><strong>Model lock-in?</strong></td><td>Model-agnostic</td><td>Model-agnostic (Gemini-optimized)</td></tr>
+<tr><td><strong>Multi-agent?</strong></td><td>No (single connection)</td><td>Yes (hierarchical tree)</td></tr>
+<tr><td><strong>Languages</strong></td><td>Python, TypeScript</td><td>Python, Java, TypeScript, Go</td></tr>
+<tr><td><strong>Governance</strong></td><td>Linux Foundation</td><td>Google open-source</td></tr>
+</tbody>
+</table>
+
+<h2 id="architecture-showdown">The Architecture Difference</h2>
+
+<p>This is the slide that makes everything click. MCP and ADK operate at <strong>different layers of the stack</strong>:</p>
+
+<svg viewBox="0 0 800 170" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- MCP Layer (bottom) -->
+  <rect x="10" y="100" width="780" height="60" rx="10" fill="#0D9488"/>
+  <text x="400" y="130" text-anchor="middle" fill="white" font-family="sans-serif" font-size="16" font-weight="bold">MCP — Protocol Layer</text>
+  <text x="400" y="150" text-anchor="middle" fill="#CCFBF1" font-family="sans-serif" font-size="11">"How does AI connect to tools?" → JSON-RPC, stdio/HTTP, Tools/Resources/Prompts</text>
+  <!-- ADK Layer (top) -->
+  <rect x="10" y="10" width="780" height="60" rx="10" fill="#1E3A5F"/>
+  <text x="400" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="16" font-weight="bold">ADK — Application Layer</text>
+  <text x="400" y="60" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-size="11">"How do I build agents that use those tools?" → Orchestration, multi-agent, deployment</text>
+  <!-- Connection -->
+  <line x1="400" y1="70" x2="400" y2="100" stroke="#F59E0B" stroke-width="3"/>
+  <text x="430" y="90" fill="#F59E0B" font-family="sans-serif" font-size="11" font-weight="bold">ADK uses MCP ↓</text>
+</svg>
+
+<p>MCP sits at the bottom — the protocol layer. It defines the connection standard. ADK sits on top — the application layer. It uses MCP to connect agents to tools while handling the orchestration, state management, and deployment.</p>
+
+<p>They're not competitors. They're layers in the same stack.</p>
+
+<h2 id="use-cases">Real-World Use Cases</h2>
+
+<svg viewBox="0 0 800 210" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <!-- MCP use cases -->
+  <rect x="10" y="10" width="370" height="90" rx="10" fill="#CCFBF1" stroke="#0D9488" stroke-width="1.5"/>
+  <text x="195" y="35" text-anchor="middle" fill="#0F766E" font-family="sans-serif" font-size="13" font-weight="bold">MCP: Tool Integration</text>
+  <text x="195" y="55" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Connect Claude Desktop to GitHub</text>
+  <text x="195" y="73" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Build a Slack MCP server for any AI app</text>
+  <text x="195" y="91" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Expose your internal API to all agents</text>
+  <!-- ADK use cases -->
+  <rect x="420" y="10" width="370" height="90" rx="10" fill="#F8FAFC" stroke="#1E3A5F" stroke-width="1.5"/>
+  <text x="605" y="35" text-anchor="middle" fill="#1E3A5F" font-family="sans-serif" font-size="13" font-weight="bold">ADK: Agent Orchestration</text>
+  <text x="605" y="55" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Build a multi-agent research pipeline</text>
+  <text x="605" y="73" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Deploy agent workflows to Cloud Run</text>
+  <text x="605" y="91" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Coordinate agents with A2A protocol</text>
+  <!-- Both together -->
+  <rect x="120" y="120" width="560" height="80" rx="10" fill="#F8FAFC" stroke="#F59E0B" stroke-width="2"/>
+  <text x="400" y="148" text-anchor="middle" fill="#F59E0B" font-family="sans-serif" font-size="13" font-weight="bold">MCP + ADK Together</text>
+  <text x="400" y="168" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">ADK root agent delegates to sub-agents → each sub-agent calls MCP servers</text>
+  <text x="400" y="186" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="11">Agent orchestration (ADK) + tool connectivity (MCP) = complete agent stack</text>
+</svg>
+
+<h2 id="when-to-choose">When to Choose Which</h2>
+
+<p>Ask yourself one question: <strong>what problem are you solving?</strong></p>
+
+<ul>
+<li><strong>"I need my AI to talk to GitHub/Slack/my database"</strong> → You need MCP. Build an MCP server for your service. Any AI app can use it.</li>
+<li><strong>"I need to build an agent that coordinates multiple tasks"</strong> → You need ADK (or another agent framework). ADK gives you orchestration, multi-agent trees, session management, and deployment tooling.</li>
+<li><strong>"I need both"</strong> → Most production systems do. Use ADK to orchestrate your agents and MCP to connect them to the world.</li>
+</ul>
+
+<h2 id="the-verdict">The Verdict</h2>
+
+<svg viewBox="0 0 800 100" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;margin:1.5rem 0;">
+  <rect x="10" y="10" width="780" height="80" rx="12" fill="#1E3A5F"/>
+  <text x="400" y="40" text-anchor="middle" fill="white" font-family="sans-serif" font-size="16" font-weight="bold">MCP is the protocol layer. ADK is the application layer.</text>
+  <text x="400" y="65" text-anchor="middle" fill="#0D9488" font-family="sans-serif" font-size="18" font-weight="bold">They're not competitors. Use both.</text>
+</svg>
+
+<p>MCP standardizes how AI connects to the world. ADK standardizes how you build agents that use those connections. The analogy: MCP is the road network. ADK is the car. You need roads to drive anywhere, and you need a car to actually get there. Arguing "roads vs cars" makes no sense — and neither does "MCP vs ADK."</p>
+
+<p>The real question isn't which one to pick. It's understanding which layer of the stack you're working on — and reaching for the right tool for that layer.</p>
+
+<p><strong>MCP connects. ADK orchestrates. Together, they build agents that work.</strong></p>
+
+<hr/>
+
+<h2 id="related">Related</h2>
+
+<ul>
+<li><a href="/nxm-problem-why-ai-integrations-were-broken-before-mcp">The N×M Problem</a> — why AI integrations were broken before MCP</li>
+<li><a href="/how-mcp-actually-works">How MCP Actually Works</a> — the 3-layer architecture under the hood</li>
+<li><a href="/mcp-tools-vs-resources-vs-prompts">MCP Tools vs Resources vs Prompts</a> — the three primitives every server exposes</li>
+<li><a href="/loop-engineering-explained">Loop Engineering Explained</a> — how loops are replacing prompting</li>
+<li><a href="/context-engineering-explained">Context Engineering Explained</a> — why context matters more than prompts</li>
+</ul>
+
+</body>
+</html>
