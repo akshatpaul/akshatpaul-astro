@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MCP 2026-07-28: The Stateless Spec Rewrite Explained — AkshatPaul.com</title>
+  <meta property="article:published_time" content="2026-07-09">
+  <meta property="og:description" content="MCP's biggest spec revision yet drops the initialize handshake and sessions entirely. Here's what breaks, what replaces it, and why the stateless core had to happen.">
+</head>
+<body>
+<p>On July 28, 2026, the Model Context Protocol ships its biggest spec revision since launch &mdash; the handshake is gone, sessions are gone, and the stateful backbone MCP has run on since day one gets torn out. Here's the full architecture breakdown: what MCP looks like today, why it broke at scale, and exactly what replaces it.</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/X6wyLCmpuo0?si=ztEfchVZDf42LiKP" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+<p>If you've deployed an MCP server behind a load balancer, you've probably already felt the pain this release fixes. Ten weeks from the release candidate locking, MCP <code>2026-07-28</code> becomes final &mdash; and the MCP maintainers themselves are calling it the largest revision of the protocol since launch. Six Specification Enhancement Proposals (SEPs) came together just to deliver the headline change: a fully stateless protocol core.</p>
+
+<h2 id="the-deadline">The Deadline</h2>
+<p>Mark the calendar: the release candidate for MCP <code>2026-07-28</code> locked on May 21, 2026, kicking off a ten-week validation window for SDK maintainers and client implementers to test against real workloads. Tier 1 SDKs are expected to ship support inside that window. The final spec publishes July 28, 2026.</p>
+<p>The good news buried in all this churn: going forward, every deprecated feature gets a minimum twelve-month runway before it can be removed, under a new formal feature lifecycle policy. This kind of breaking change is meant to be the last one of its size.</p>
+
+<h2 id="the-basics-host-client-server">The Basics: Host, Client, Server</h2>
+<p>MCP standardizes how LLM applications plug into external tools and data &mdash; conceptually similar to how the Language Server Protocol standardized language tooling across editors. Three roles make up the topology:</p>
+<ul>
+  <li><strong>Host</strong> &mdash; the LLM application that initiates connections (an IDE, a chat client, an agent runtime).</li>
+  <li><strong>Client</strong> &mdash; a connector living inside the host, maintaining a strict one-to-one relationship with a server.</li>
+  <li><strong>Server</strong> &mdash; the service exposing tools, data, and prompt templates back to the model.</li>
+</ul>
+
+<svg viewBox="0 0 640 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: Host, Client, and Server connected by JSON-RPC">
+<rect x="1" y="1" width="638" height="198" fill="#F7F5EF" stroke="#D8E6F0" stroke-width="1"/>
+<defs>
+<marker id="arrowTopology" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#38BDF8"/></marker>
+</defs>
+<rect x="30" y="60" width="150" height="80" fill="none" stroke="#10243E" stroke-width="2"/>
+<text x="105" y="95" text-anchor="middle" font-family="Consolas,monospace" font-size="15" font-weight="bold" fill="#10243E">HOST</text>
+<text x="105" y="114" text-anchor="middle" font-family="Calibri,sans-serif" font-size="10" fill="#475569">LLM application</text>
+<rect x="245" y="60" width="150" height="80" fill="none" stroke="#10243E" stroke-width="2"/>
+<text x="320" y="95" text-anchor="middle" font-family="Consolas,monospace" font-size="15" font-weight="bold" fill="#10243E">CLIENT</text>
+<text x="320" y="114" text-anchor="middle" font-family="Calibri,sans-serif" font-size="10" fill="#475569">Connector</text>
+<rect x="460" y="60" width="150" height="80" fill="none" stroke="#10243E" stroke-width="2"/>
+<text x="535" y="95" text-anchor="middle" font-family="Consolas,monospace" font-size="15" font-weight="bold" fill="#10243E">SERVER</text>
+<text x="535" y="114" text-anchor="middle" font-family="Calibri,sans-serif" font-size="10" fill="#475569">Tools, data, prompts</text>
+<line x1="180" y1="100" x2="243" y2="100" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowTopology)"/>
+<line x1="395" y1="100" x2="458" y2="100" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowTopology)"/>
+<text x="212" y="90" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#475569">1:1</text>
+<text x="426" y="90" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#475569">JSON-RPC 2.0</text>
+</svg>
+
+<p>All three talk over JSON-RPC 2.0. A single host isn't limited to one server &mdash; it can spin up many isolated client&harr;server sessions in parallel, one per connected server, each fully sandboxed from the others.</p>
+
+<h2 id="the-payload-what-a-server-offers">The Payload: What a Server Offers</h2>
+<p>Once connected, a server can expose three capability types to the client, negotiated at connection time:</p>
+<ul>
+  <li><strong>Resources</strong> &mdash; context and data for the model or user to read.</li>
+  <li><strong>Prompts</strong> &mdash; templated messages and workflows.</li>
+  <li><strong>Tools</strong> &mdash; functions the model can actually execute.</li>
+</ul>
+<p>A real <code>tools/call</code> request looks like this:</p>
+<pre><code>{"jsonrpc":"2.0","id":1,"method":"tools/call",
+ "params":{"name":"search","arguments":{"q":"otters"}}}</code></pre>
+<p>Clients can offer capabilities back to servers too &mdash; historically, sampling, roots, and elicitation. Two of those three are being deprecated in this release, which we'll get to.</p>
+
+<h2 id="before-the-stateful-handshake">Before: The Stateful Handshake</h2>
+<p>Under the outgoing <code>2025-11-25</code> spec, calling a tool over Streamable HTTP means establishing a session first via an <code>initialize</code> handshake:</p>
+<pre><code>POST /mcp HTTP/1.1
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":1,"method":"initialize",
+ "params":{"protocolVersion":"2025-11-25","capabilities":{},
+           "clientInfo":{"name":"my-app","version":"1.0"}}}</code></pre>
+<p>The server responds with an <code>Mcp-Session-Id</code> that every subsequent request must carry &mdash; pinning the client to whichever server instance issued it:</p>
+<pre><code>POST /mcp HTTP/1.1
+Mcp-Session-Id: 1868a90c-3a3f-4f5b
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":2,"method":"tools/call",
+ "params":{"name":"search","arguments":{"q":"otters"}}}</code></pre>
+
+<svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: client pinned to Server A via a session, Server B unreachable, shared session store">
+<rect x="1" y="1" width="638" height="258" fill="#F7F5EF" stroke="#D8E6F0" stroke-width="1"/>
+<defs>
+<marker id="arrowOldInit" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#10243E"/></marker>
+<marker id="arrowOldPinned" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#EF4444"/></marker>
+<marker id="arrowOldStore" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#F59E0B"/></marker>
+</defs>
+<rect x="20" y="95" width="140" height="70" fill="none" stroke="#10243E" stroke-width="2"/>
+<text x="90" y="135" text-anchor="middle" font-family="Consolas,monospace" font-size="14" font-weight="bold" fill="#10243E">CLIENT</text>
+<rect x="280" y="35" width="160" height="65" fill="none" stroke="#10B981" stroke-width="2"/>
+<text x="360" y="62" text-anchor="middle" font-family="Consolas,monospace" font-size="13" font-weight="bold" fill="#10243E">SERVER A</text>
+<text x="360" y="80" text-anchor="middle" font-family="Calibri,sans-serif" font-size="9" fill="#475569">holds the session</text>
+<rect x="280" y="165" width="160" height="55" fill="none" stroke="#94A3B8" stroke-width="2"/>
+<text x="360" y="195" text-anchor="middle" font-family="Consolas,monospace" font-size="13" font-weight="bold" fill="#10243E">SERVER B</text>
+<text x="360" y="210" text-anchor="middle" font-family="Calibri,sans-serif" font-size="9" fill="#475569">unreachable</text>
+<rect x="490" y="95" width="130" height="70" fill="none" stroke="#F59E0B" stroke-width="2"/>
+<text x="555" y="125" text-anchor="middle" font-family="Consolas,monospace" font-size="12" font-weight="bold" fill="#10243E">SESSION</text>
+<text x="555" y="140" text-anchor="middle" font-family="Consolas,monospace" font-size="12" font-weight="bold" fill="#10243E">STORE</text>
+<line x1="160" y1="120" x2="278" y2="75" stroke="#10243E" stroke-width="2" marker-end="url(#arrowOldInit)"/>
+<text x="205" y="90" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#475569">initialize</text>
+<line x1="160" y1="150" x2="278" y2="195" stroke="#EF4444" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrowOldPinned)"/>
+<text x="205" y="185" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#EF4444">pinned</text>
+<line x1="440" y1="70" x2="490" y2="110" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrowOldStore)"/>
+</svg>
+
+<h2 id="the-problem-sticky-sessions-dont-scale">The Problem: Sticky Sessions Don't Scale Quietly</h2>
+<p>That single pinned session creates three concrete operational costs for anyone running MCP servers at any real scale:</p>
+<table>
+  <tr><th>Cost</th><th>What it means</th></tr>
+  <tr><td>Sticky routing</td><td>The load balancer must pin every client to one instance &mdash; no plain round-robin.</td></tr>
+  <tr><td>Shared session store</td><td>Every server instance needs access to the same session state to stay consistent, usually meaning new infrastructure (Redis, a database) just for protocol bookkeeping.</td></tr>
+  <tr><td>Deep packet inspection</td><td>Gateways and rate-limiters must read into the message body just to figure out what operation is even happening.</td></tr>
+</table>
+<p>None of that is what anyone signs up for when standing up a tool server. This is exactly the pain the 2026 rewrite targets.</p>
+
+<h2 id="after-the-stateless-core">After: The Stateless Core</h2>
+<p>In the new spec, the <code>initialize</code>/<code>initialized</code> handshake is removed entirely (SEP-2575), and the <code>Mcp-Session-Id</code> header and protocol-level session go with it (SEP-2567). Client info, protocol version, and capabilities now travel inside <code>_meta</code> on every single request instead of being negotiated once up front:</p>
+<pre><code>POST /mcp HTTP/1.1
+MCP-Protocol-Version: 2026-07-28
+Mcp-Method: tools/call
+Mcp-Name: search
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":1,"method":"tools/call",
+ "params":{"name":"search","arguments":{"q":"otters"},
+           "_meta":{"io.modelcontextprotocol/clientInfo":{"name":"my-app","version":"1.0"}}}}</code></pre>
+<p>Because nothing is pinned to a session anymore, that request can land on any server instance &mdash; plain round-robin, no sticky routing, no shared session store. The Streamable HTTP transport now requires <code>Mcp-Method</code> and <code>Mcp-Name</code> headers (SEP-2243), so load balancers and gateways can route on the operation without inspecting the body at all. There's also a new <code>server/discover</code> method for clients that want to fetch server capabilities on demand, plus <code>ttlMs</code>/<code>cacheScope</code> fields on list and resource results (SEP-2549) so clients know exactly how long a <code>tools/list</code> response stays fresh and whether it's safe to share across users.</p>
+
+<svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: client request round-robins to any of three stateless servers">
+<rect x="1" y="1" width="638" height="258" fill="#F7F5EF" stroke="#D8E6F0" stroke-width="1"/>
+<defs>
+<marker id="arrowNewRR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#38BDF8"/></marker>
+<marker id="arrowNewSrv" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#10B981"/></marker>
+</defs>
+<rect x="20" y="95" width="140" height="70" fill="none" stroke="#10243E" stroke-width="2"/>
+<text x="90" y="135" text-anchor="middle" font-family="Consolas,monospace" font-size="14" font-weight="bold" fill="#10243E">CLIENT</text>
+<rect x="195" y="112" width="110" height="36" fill="none" stroke="#38BDF8" stroke-width="1.5"/>
+<text x="250" y="134" text-anchor="middle" font-family="Consolas,monospace" font-size="10" font-weight="bold" fill="#10243E">ROUND ROBIN</text>
+<rect x="360" y="20" width="170" height="55" fill="none" stroke="#10B981" stroke-width="2"/>
+<text x="445" y="53" text-anchor="middle" font-family="Consolas,monospace" font-size="13" font-weight="bold" fill="#10243E">SERVER A</text>
+<rect x="360" y="102" width="170" height="55" fill="none" stroke="#10B981" stroke-width="2"/>
+<text x="445" y="135" text-anchor="middle" font-family="Consolas,monospace" font-size="13" font-weight="bold" fill="#10243E">SERVER B</text>
+<rect x="360" y="184" width="170" height="55" fill="none" stroke="#10B981" stroke-width="2"/>
+<text x="445" y="217" text-anchor="middle" font-family="Consolas,monospace" font-size="13" font-weight="bold" fill="#10243E">SERVER C</text>
+<line x1="160" y1="130" x2="193" y2="130" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowNewRR)"/>
+<line x1="305" y1="122" x2="358" y2="48" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrowNewSrv)"/>
+<line x1="305" y1="130" x2="358" y2="130" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrowNewSrv)"/>
+<line x1="305" y1="138" x2="358" y2="211" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrowNewSrv)"/>
+</svg>
+
+<h2 id="the-handle-pattern">The Handle Pattern: State Without Sessions</h2>
+<p>A stateless protocol doesn't mean a stateless application. Servers that need to carry state across calls do what HTTP APIs have always done: mint an explicit handle and have the model pass it back as an ordinary argument on later calls.</p>
+<pre><code>Model  -&gt; create_basket()
+Server -&gt; { "basket_id": "b_9x2" }
+Model  -&gt; add_item(basket_id: "b_9x2", sku: "...")
+Server -&gt; { "ok": true, "total": 2 }</code></pre>
+
+<svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence diagram: model creates a basket, receives a handle, and passes it back on the next call">
+<rect x="1" y="1" width="638" height="258" fill="#F7F5EF" stroke="#D8E6F0" stroke-width="1"/>
+<defs>
+<marker id="arrowHandleFwd" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#38BDF8"/></marker>
+<marker id="arrowHandleBack" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#10B981"/></marker>
+</defs>
+<rect x="80" y="20" width="120" height="34" fill="none" stroke="#10243E" stroke-width="2"/>
+<text x="140" y="42" text-anchor="middle" font-family="Consolas,monospace" font-size="12" font-weight="bold" fill="#10243E">MODEL</text>
+<line x1="140" y1="54" x2="140" y2="235" stroke="#10243E" stroke-width="1" stroke-dasharray="3 3"/>
+<rect x="410" y="20" width="150" height="34" fill="none" stroke="#10243E" stroke-width="2"/>
+<text x="485" y="42" text-anchor="middle" font-family="Consolas,monospace" font-size="12" font-weight="bold" fill="#10243E">MCP SERVER</text>
+<line x1="485" y1="54" x2="485" y2="235" stroke="#10243E" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="140" y1="85" x2="483" y2="85" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrowHandleFwd)"/>
+<text x="312" y="78" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#10243E">create_basket()</text>
+<line x1="485" y1="125" x2="142" y2="125" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrowHandleBack)"/>
+<text x="312" y="118" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#10243E">&#8594; basket_id: "b_9x2"</text>
+<line x1="140" y1="165" x2="483" y2="165" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrowHandleFwd)"/>
+<text x="312" y="158" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#10243E">add_item(b_9x2, sku)</text>
+<line x1="485" y1="205" x2="142" y2="205" stroke="#10B981" stroke-width="1.5" marker-end="url(#arrowHandleBack)"/>
+<text x="312" y="198" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#10243E">&#8594; ok, total: 2 items</text>
+</svg>
+
+<p>In practice this turns out to be more powerful than hidden session state ever was &mdash; the model can compose handles across tools, reason about them explicitly, and hand them off between steps in ways that transport-level metadata never allowed.</p>
+<p>Server-initiated requests (like an elicitation prompt) still needed a rework for a world with no persistent connection. They may now only be issued while the server is actively processing a client request (SEP-2260), and Multi Round-Trip Requests (SEP-2322) replace a held-open SSE stream with an explicit <code>InputRequiredResult</code> that any server instance can pick back up on retry.</p>
+
+<h2 id="new-capabilities-mcp-apps-tasks">New Capabilities: MCP Apps &amp; Tasks</h2>
+<p>New capabilities no longer get bolted directly onto the core spec &mdash; they ship as Extensions: reverse-DNS IDs, their own repositories and maintainers, versioned independently (SEP-2133). Two official extensions ship with this release.</p>
+<ul>
+  <li><strong>MCP Apps</strong> &mdash; servers ship interactive HTML interfaces that hosts render in a sandboxed iframe. Tools declare their UI templates ahead of time so hosts can prefetch and security-review before anything runs &mdash; every UI action still routes through the same JSON-RPC audit path as a direct tool call.</li>
+  <li><strong>Tasks</strong> &mdash; a <code>tools/call</code> can now return a task handle instead of an immediate result. The client drives it forward with <code>tasks/get</code>, <code>tasks/update</code>, and <code>tasks/cancel</code> &mdash; task creation is server-directed. <code>tasks/list</code> is gone, since it can't be scoped safely without sessions.</li>
+</ul>
+
+<h2 id="security-authorization-gets-hardened">Security: Authorization Gets Hardened</h2>
+<p>Six SEPs harden MCP's authorization spec to align more closely with how OAuth 2.0 and OpenID Connect actually get deployed in practice:</p>
+<ul>
+  <li>Clients must validate the <code>iss</code> parameter on authorization responses per RFC 9207 &mdash; closing off a mix-up attack class especially relevant to MCP's single-client, many-server pattern.</li>
+  <li>Clients declare their OpenID Connect <code>application_type</code> during Dynamic Client Registration, fixing the common bug where a desktop or CLI client defaults to <code>"web"</code> and gets its localhost redirect URI rejected.</li>
+  <li>Registered credentials bind to the issuing authorization server's issuer, with re-registration required when a resource migrates between auth servers.</li>
+  <li>The spec now documents requesting refresh tokens from OpenID-Connect-style servers, and clarifies scope accumulation during step-up auth.</li>
+</ul>
+
+<h2 id="whats-being-deprecated">What's Being Deprecated</h2>
+<p>Three core features are formally deprecated under the new lifecycle policy (SEP-2577) &mdash; annotation-only for now, guaranteed to keep working for at least twelve months:</p>
+<table>
+  <tr><th>Deprecated</th><th>Replacement</th></tr>
+  <tr><td>Roots</td><td>Tool parameters, resource URIs, or server configuration</td></tr>
+  <tr><td>Sampling</td><td>Direct integration with LLM provider APIs</td></tr>
+  <tr><td>Logging</td><td><code>stderr</code> for stdio transports / OpenTelemetry for structured observability</td></tr>
+</table>
+<p>There's also a smaller but very real breaking change: the error code for a missing resource moves from the MCP-custom <code>-32002</code> to the standard JSON-RPC <code>-32602</code> Invalid Params. If your client matches on the literal <code>-32002</code> value anywhere, update it before July 28.</p>
+
+<h2 id="the-rollout-timeline">The Rollout Timeline</h2>
+<p>RC locked May 21, 2026 &rarr; ten-week SDK validation window &rarr; final spec July 28, 2026. Across the release: six SEPs delivered the stateless core, two official extensions shipped alongside it, another six SEPs hardened authorization, and every future deprecation now carries a twelve-month-minimum runway. That last number is arguably the real point of this release &mdash; not just this one breaking change, but making sure it's the last time MCP has to break this hard.</p>
+
+<h2 id="three-pillars-to-remember">Three Pillars to Remember</h2>
+<ul>
+  <li><strong>Stateless Core</strong> &mdash; no handshake, no session &mdash; any instance can handle any request.</li>
+  <li><strong>Extensions</strong> &mdash; MCP Apps and Tasks ship and evolve independently of the core spec.</li>
+  <li><strong>Hardened Auth</strong> &mdash; OAuth/OIDC-aligned, resistant to mix-up attacks.</li>
+</ul>
+
+<p>If you're building or operating MCP servers, don't wait for July 28 &mdash; the release candidate is available now. Test against it.</p>
+
+<h2 id="sources">Sources</h2>
+<ul>
+  <li><a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/">The 2026-07-28 MCP Specification Release Candidate</a></li>
+  <li><a href="https://modelcontextprotocol.io/specification/2025-11-25">MCP Specification (2025-11-25)</a></li>
+  <li><a href="https://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/">The 2026 MCP Roadmap</a></li>
+  <li><a href="https://github.com/modelcontextprotocol/modelcontextprotocol">MCP Spec Repository (GitHub)</a></li>
+</ul>
+</body>
+</html>
